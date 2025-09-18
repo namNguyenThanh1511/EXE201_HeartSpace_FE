@@ -1,6 +1,6 @@
+import { useAuthStore } from "@/store/zustand/auth-store";
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import { deleteCookie } from "cookies-next";
-import { useAuthStore } from "@/lib/store/authStore";
 
 // API error response data structure
 export interface ApiErrorData {

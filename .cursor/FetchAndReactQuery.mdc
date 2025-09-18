@@ -1,0 +1,77 @@
+---
+description: Fetch API and React Querry
+globs: 
+alwaysApply: false
+---
+ # Fetch API and React Query Standards
+
+## Service Layer Architecture
+1. API Service Structure
+   - Use centralized apiService from `/services/api/core` as base for all requests
+   - Organize services by domain in `/services/api/services` directory
+   - Export typed interfaces for all request/response objects
+   - Document all service functions with JSDoc
+
+2. Service Function Patterns
+   - Use descriptive function names (get*, create*, update*, delete*)
+   - Return typed responses with proper error handling
+   - Implement parameter conversion utilities for complex filters
+   - Support pagination, sorting, and filtering parameters
+   - Maintain consistent response structure with {code, status, message, data}
+   - Use proper HTTP methods (GET, POST, PUT, DELETE)
+
+3. TypeScript Integration
+   - Define comprehensive TypeScript interfaces for all API models
+   - Use enums for fixed value sets (e.g., PropertyStatus, PropertyType)
+   - Export all types and interfaces for use in components
+   - Maintain strict type checking for API parameters
+
+## React Query Implementation
+1. Hook Structure
+   - Create dedicated domain-specific hooks in `/hooks` directory
+   - Follow naming convention: use[Domain] and use[Domain][Action]
+   - Implement proper dependency arrays for query keys
+   - Enable conditional fetching with the enabled option
+   - Maintain consistent error handling patterns
+
+2. Query Management
+   - Use descriptive and consistent queryKey patterns: [domain, action, parameters]
+   - Serialize complex filter objects in queryKeys using JSON.stringify
+   - Implement proper query invalidation on mutations
+   - Use select option for data transformation
+   - Leverage queryClient for cache management
+
+3. Mutation Patterns
+   - Implement optimistic updates when appropriate
+   - Handle success and error states consistently
+   - Invalidate and refetch related queries on successful mutations
+   - Integrate with toast notifications for user feedback
+   - Preserve proper typing throughout mutation flow
+
+4. State Management Integration
+   - Integrate with global state (Zustand) for auth-related functionality
+   - Use React Query for server state, local hooks for UI state
+   - Implement proper loading and error indicators
+   - Manage token storage in both store and cookies
+   - Handle authentication state properly in query/mutation hooks
+
+5. Performance Optimization
+   - Implement staleTime and cacheTime configurations
+   - Use proper refetchOnWindowFocus and refetchOnReconnect settings
+   - Leverage query deduplication for identical requests
+   - Implement retry logic for failed requests
+   - Consider prefetching for critical data
+
+## Error Handling
+1. Client-Side Errors
+   - Implement consistent error state management
+   - Use toast notifications for user feedback
+   - Provide clear error messages from API responses
+   - Support retry functionality for failed requests
+   - Log errors to console in development
+
+2. API Error Responses
+   - Follow consistent error format: {code, status: false, message}
+   - Include meaningful error messages
+   - Use appropriate HTTP status codes
+   - Handle network errors gracefully

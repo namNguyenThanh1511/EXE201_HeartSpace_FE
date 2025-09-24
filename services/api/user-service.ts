@@ -10,6 +10,9 @@ export interface User {
   identifier: string;
   avatar: string;
   userRole: string;
+  status: string;
+  about: string;
+  role: string;
 }
 
 // User service with profile-related API methods

@@ -7,7 +7,7 @@ import { images } from "@/lib/images-var";
 
 export default function LandingPage() {
   return (
-    <div className="bg-white ">
+    <div className="bg-white pt-[7rem] md:pt-[5.2rem]">
       {/* Hero Section */}
       <div className="relative w-full h-[calc(100vh-7rem)] md:h-[calc(100vh-5.2rem)]">
         <Image
@@ -16,6 +16,7 @@ export default function LandingPage() {
           fill
           className="object-cover object-center brightness-90"
           priority
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-black/30" />
 

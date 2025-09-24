@@ -9,9 +9,9 @@ import Footer from "@/components/composite/footer";
 //const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Revoland - Nền Tảng Công Nghệ Bất Động Sản Toàn Diện",
+  title: "HeartSpace - Nền Tảng hỗ trợ tâm lý ",
   description:
-    "Revoland - Giải pháp bất động sản toàn diện, đáng tin cậy. Chuyên cung cấp dịch vụ mua bán, cho thuê nhà đất, biệt thự, căn hộ và đất nền với đội ngũ chuyên gia uy tín, tận tâm.",
+    "HeartSpace - Giải pháp hỗ trợ tâm lý toàn diện, đáng tin cậy. Chuyên cung cấp dịch vụ tư vấn tâm lý, trị liệu và hỗ trợ sức khỏe tâm thần với đội ngũ chuyên gia uy tín, tận tâm.",
 };
 
 export default function HomeLayout({

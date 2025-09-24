@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <div className="w-full sticky top-0 z-50 flex-shrink-0">
+    <div className="w-full bg-background text-foreground sticky top-0 z-50 flex-shrink-0 shadow-sm">
       <header className="absolute inset-x-0 top-0 z-50 bg-background/10 backdrop-blur-md border-b border-border/20">
         <nav className="flex items-center justify-between p-6 lg:px-8 max-w-7xl mx-auto">
           {/* Logo */}

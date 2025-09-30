@@ -29,6 +29,7 @@ export interface RegisterCredentials {
   //   dateOfBirth: string;
   //   identifier: string;
   confirmPassword: string;
+  gender?: boolean;
   //   role: Roles;
 }
 

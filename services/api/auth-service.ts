@@ -1,11 +1,6 @@
 import { ApiResponse } from "@/types/api-type";
 import apiService from "./core";
 
-export enum Roles {
-  Admin = "Admin",
-  User = "User",
-}
-
 export interface LoginCredentials {
   keyLogin: string;
   password: string;

@@ -15,6 +15,12 @@ export interface User {
   role: string;
 }
 
+export enum UserRole {
+  ADMIN = "Admin",
+  CONSULTANT = "Consultant",
+  CLIENT = "Client",
+}
+
 // User service with profile-related API methods
 export const userService = {
   // Get current user profile

@@ -1,0 +1,131 @@
+[
+  {
+    "identifier": "USR-0001",
+    "fullName": "Eddie Lake",
+    "email": "eddie.lake@example.com",
+    "phoneNumber": "+84 091 123 4567",
+    "userName": "eddie.lake",
+    "dateOfBirth": "2024-01-12",
+    "avatar": "https://ui-avatars.com/api/?name=Eddie+Lake",
+    "userRole": "ADMIN",
+    "status": "Active",
+    "about": "",
+    "role": "Admin"
+  },
+  {
+    "identifier": "USR-0002",
+    "fullName": "Jamik Tashpulatov",
+    "email": "jamik.tashpulatov@example.com",
+    "phoneNumber": "+84 092 234 5678",
+    "userName": "jamik.tashpulatov",
+    "dateOfBirth": "2024-02-08",
+    "avatar": "https://ui-avatars.com/api/?name=Jamik+Tashpulatov",
+
+    "status": "Pending",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0003",
+    "fullName": "Emily Whalen",
+    "email": "emily.whalen@example.com",
+    "phoneNumber": "+84 093 345 6789",
+    "userName": "emily.whalen",
+    "dateOfBirth": "2024-03-05",
+    "avatar": "https://ui-avatars.com/api/?name=Emily+Whalen",
+    "userRole": "CLIENT",
+    "status": "Active",
+    "about": "",
+    "role": "Client"
+  },
+  {
+    "identifier": "USR-0004",
+    "fullName": "Carlos Rodriguez",
+    "email": "carlos.rodriguez@example.com",
+    "phoneNumber": "+84 094 456 7890",
+    "userName": "carlos.rodriguez",
+    "dateOfBirth": "2024-04-14",
+    "avatar": "https://ui-avatars.com/api/?name=Carlos+Rodriguez",
+
+    "status": "Inactive",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0005",
+    "fullName": "Maya Johnson",
+    "email": "maya.johnson@example.com",
+    "phoneNumber": "+84 095 567 8901",
+    "userName": "maya.johnson",
+    "dateOfBirth": "2024-05-20",
+    "avatar": "https://ui-avatars.com/api/?name=Maya+Johnson",
+
+    "status": "Active",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0006",
+    "fullName": "Sarah Chen",
+    "email": "sarah.chen@example.com",
+    "phoneNumber": "+84 096 678 9012",
+    "userName": "sarah.chen",
+    "dateOfBirth": "2024-06-18",
+    "avatar": "https://ui-avatars.com/api/?name=Sarah+Chen",
+
+    "status": "Pending",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0007",
+    "fullName": "Raj Patel",
+    "email": "raj.patel@example.com",
+    "phoneNumber": "+84 097 789 0123",
+    "userName": "raj.patel",
+    "dateOfBirth": "2024-07-03",
+    "avatar": "https://ui-avatars.com/api/?name=Raj+Patel",
+
+    "status": "Active",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0008",
+    "fullName": "Leila Ahmadi",
+    "email": "leila.ahmadi@example.com",
+    "phoneNumber": "+84 098 890 1234",
+    "userName": "leila.ahmadi",
+    "dateOfBirth": "2024-07-27",
+    "avatar": "https://ui-avatars.com/api/?name=Leila+Ahmadi",
+    "userRole": "CLIENT",
+    "status": "Pending",
+    "about": "",
+    "role": "Client"
+  },
+  {
+    "identifier": "USR-0009",
+    "fullName": "Thomas Wilson",
+    "email": "thomas.wilson@example.com",
+    "phoneNumber": "+84 099 901 2345",
+    "userName": "thomas.wilson",
+    "dateOfBirth": "2024-08-09",
+    "avatar": "https://ui-avatars.com/api/?name=Thomas+Wilson",
+
+    "status": "Active",
+    "about": "",
+    "role": "Consultant"
+  },
+  {
+    "identifier": "USR-0010",
+    "fullName": "Sophia Martinez",
+    "email": "sophia.martinez@example.com",
+    "phoneNumber": "+84 090 112 3456",
+    "userName": "sophia.martinez",
+    "dateOfBirth": "2024-08-30",
+    "avatar": "https://ui-avatars.com/api/?name=Sophia+Martinez",
+    "status": "Active",
+    "about": "",
+    "role": "Consultant"
+  }
+]

@@ -5,10 +5,10 @@ export interface ApiResponse<T> {
   data: T;
   headers?: Record<string, string>;
   errors?: ApiErrorResponseData[];
+  metaData?: { [key: string]: any };
 }
 
 export interface ApiErrorResponseData {
   message: string;
   code?: string | number;
-  field?: string;
 }

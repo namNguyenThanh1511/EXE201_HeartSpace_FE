@@ -4,32 +4,24 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { LOGIN_ROUTE } from "@/lib/strings";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/services/use-auth";
-
-export interface RegisterCredentials {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  userName: string;
-  password: string;
-  confirmPassword: string;
-  identifier?: string; // Optional, as per previous discussion
-}
+import type { RegisterCredentials as ApiRegisterCredentials } from "@/services/api/auth-service";
 
 export function RegisterForm({ className, ...props }: React.ComponentProps<"form">) {
   const { register, loading, error } = useAuth();
-  const [formData, setFormData] = useState<RegisterCredentials>({
+  const [formData, setFormData] = useState<ApiRegisterCredentials>({
     fullName: "",
     email: "",
     phoneNumber: "",
     userName: "",
     password: "",
     confirmPassword: "",
-    identifier: "",
-  });
+    gender: true,
+  } as ApiRegisterCredentials);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -97,6 +89,27 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"form
             onChange={handleInputChange}
             required
           />
+        </div>
+
+        <div className="grid gap-3">
+          <Label htmlFor="gender">Gender</Label>
+          <RadioGroup
+            value={formData.gender ? "male" : "female"}
+            onValueChange={(val: string) =>
+              setFormData((prev) => ({ ...prev, gender: val === "male" }))
+            }
+            className="flex items-center gap-6"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="male" id="gender-male" />
+              <Label htmlFor="gender-male">Male</Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="female" id="gender-female" />
+              <Label htmlFor="gender-female">Female</Label>
+            </div>
+          </RadioGroup>
         </div>
 
         <div className="grid gap-3">

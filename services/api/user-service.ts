@@ -13,6 +13,7 @@ export interface User {
   status: string;
   about: string;
   role: string;
+  gender: string;
 }
 
 export enum UserRole {

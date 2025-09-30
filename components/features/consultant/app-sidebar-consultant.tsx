@@ -29,33 +29,23 @@ import { NavMain } from "@/components/nav-main";
 import { NavUser } from "../user/nav-user";
 import Link from "next/link";
 
-export function AppSidebarAdmin({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebarConsultant({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navigationData = {
     navMain: [
       {
         title: "Dashboard",
-        url: "/admin/dashboard",
+        url: "/consultant/dashboard",
         icon: () => <LayoutDashboardIcon />,
       },
       {
-        title: "Người dùng",
-        url: "/admin/users",
-        icon: () => <Users />,
-      },
-      {
         title: "Lịch hẹn",
-        url: "/admin/appointments",
+        url: "/consultant/appointments",
         icon: () => <Calendar />,
       },
       {
         title: "Chat",
-        url: "/admin/admin-chat",
+        url: "/consultant/consultant-chat",
         icon: () => <MessageCircle />,
-      },
-      {
-        title: "Tin tức",
-        url: "/admin/news",
-        icon: () => <Newspaper />,
       },
     ],
     navClouds: [
@@ -114,7 +104,7 @@ export function AppSidebarAdmin({ ...props }: React.ComponentProps<typeof Sideba
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link href="/admin/dashboard">
+              <Link href="/consultant/dashboard">
                 <ArrowUpCircleIcon className="h-5 w-5" />
                 <span className="text-base font-semibold">HeartSpace Inc.</span>
               </Link>

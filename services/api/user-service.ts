@@ -4,16 +4,52 @@ import apiService from "./core";
 export interface User {
   fullName: string;
   email: string;
+  bio: string;
   phoneNumber: string;
   userName: string;
   dateOfBirth: string;
   identifier: string;
   avatar: string;
   userRole: string;
-  status: string;
-  about: string;
+  isActive: boolean;
   role: string;
-  gender: string;
+  gender: boolean;
+  consultantInfo: ConsultantProfile;
+}
+export interface ConsultantProfile {
+  specialization: string;
+  experienceYears: number;
+  hourlyRate: number;
+  certifications: string;
+  consultingIn: Consulting[];
+}
+
+export interface ConsultantProfileRequest {
+  specialization: string;
+  experienceYears: number;
+  hourlyRate: number;
+  certifications: string;
+  consultingIn: number[];
+}
+
+export interface Consulting {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface UserUpdatingRequest {
+  fullName: string;
+  email: string;
+  bio: string;
+  phoneNumber: string;
+  userName: string;
+  dateOfBirth: string;
+  identifier: string;
+  avatar: string;
+  role: string;
+  gender: boolean;
+  consultantInfo?: ConsultantProfileRequest;
 }
 
 // User service with profile-related API methods
@@ -25,8 +61,10 @@ export const userService = {
   },
 
   // Update current user profile
-  updateUserProfile: async (profileData: Partial<User>): Promise<ApiResponse<string>> => {
-    const response = await apiService.put<ApiResponse<string>, Partial<User>>(
+  updateUserProfile: async (
+    profileData: Partial<UserUpdatingRequest>
+  ): Promise<ApiResponse<string>> => {
+    const response = await apiService.put<ApiResponse<string>, Partial<UserUpdatingRequest>>(
       "/api/users/profile",
       profileData
     );

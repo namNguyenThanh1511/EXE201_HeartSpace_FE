@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export function useAuth() {
-  const { login, logout, setToken, isAuthenticated } = useAuthStore();
+  const { login, logout, setToken, isAuthenticated, setUser } = useAuthStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

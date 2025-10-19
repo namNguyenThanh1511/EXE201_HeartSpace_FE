@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search,
@@ -14,30 +15,39 @@ import {
   Copy,
   Menu,
   X,
+  LogOut,
+  User,
 } from "lucide-react";
-
-import apiService from "@/services/api/core";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/zustand/auth-store";
 
 export default function Sidebar() {
-  const [activeMenu, setActiveMenu] = useState("consultants");
+  const [activeMenu, setActiveMenu] = useState("home");
   const [projectsExpanded, setProjectsExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, token } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
+  // 👉 Thêm field linkTo cho từng item
   const menuItems = [
-    { id: "search", label: "Search", icon: Search, hasSubmenu: false },
-    { id: "home", label: "Home", icon: Home, hasSubmenu: false },
+    { id: "search", label: "Search", icon: Search, linkTo: "/search" },
+    { id: "home", label: "Home", icon: Home, linkTo: "/" },
     { id: "projects", label: "Projects", icon: FolderKanban, hasSubmenu: true },
-    { id: "messages", label: "Messages", icon: MessageSquare, hasSubmenu: false },
-    { id: "consultants", label: "Consultants", icon: Users, hasSubmenu: false },
-    { id: "favorites", label: "Favorites", icon: Star, hasSubmenu: false },
+    { id: "messages", label: "Messages", icon: MessageSquare, linkTo: "/messages" },
+    { id: "consultants", label: "Consultants", icon: Users, linkTo: "/consultants" },
+    { id: "favorites", label: "Favorites", icon: Star, linkTo: "/favorites" },
   ];
 
   const bottomMenuItems = [
-    { id: "settings", label: "Settings", icon: Settings },
-    { id: "help", label: "Help", icon: HelpCircle },
+    { id: "settings", label: "Settings", icon: Settings, linkTo: "/settings" },
+    { id: "help", label: "Help", icon: HelpCircle, linkTo: "/help" },
   ];
 
   const fallbackUser = {
@@ -47,11 +57,15 @@ export default function Sidebar() {
   };
 
   const displayUser = user || fallbackUser;
-  console.log(displayUser);
+
+  const handleLogout = () => {
+    logout?.();
+    window.location.href = "/login";
+  };
 
   return (
     <>
-      {/* Sidebar Overlay for mobile */}
+      {/* Overlay for mobile */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 lg:hidden"
@@ -89,15 +103,9 @@ export default function Sidebar() {
         {/* Main Menu */}
         <nav className="flex-1 px-2 overflow-y-auto">
           <div className="space-y-1 mt-2">
-            {menuItems.map((item) => (
-              <div key={item.id}>
-                <button
-                  onClick={() => {
-                    setActiveMenu(item.id);
-                    if (item.id === "projects") {
-                      setProjectsExpanded(!projectsExpanded);
-                    }
-                  }}
+            {menuItems.map((item) => {
+              const ItemContent = (
+                <div
                   className={`w-full flex items-center ${
                     collapsed ? "justify-center" : "justify-between"
                   } px-3 py-3 rounded-lg text-sm font-medium transition-all
@@ -118,21 +126,50 @@ export default function Sidebar() {
                       }`}
                     />
                   )}
-                </button>
+                </div>
+              );
 
-                {/* Submenu */}
-                {!collapsed && item.id === "projects" && projectsExpanded && (
-                  <div className="ml-8 mt-1 space-y-1">
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      Active Projects
+              return (
+                <div key={item.id}>
+                  {/* Nếu có linkTo → dùng Link, nếu không → dùng button */}
+                  {item.linkTo ? (
+                    <Link href={item.linkTo} onClick={() => setActiveMenu(item.id)}>
+                      {ItemContent}
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setActiveMenu(item.id);
+                        if (item.id === "projects") {
+                          setProjectsExpanded(!projectsExpanded);
+                        }
+                      }}
+                      className="w-full text-left"
+                    >
+                      {ItemContent}
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      Archived
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+
+                  {/* Submenu */}
+                  {!collapsed && item.id === "projects" && projectsExpanded && (
+                    <div className="ml-8 mt-1 space-y-1">
+                      <Link
+                        href="/projects/active"
+                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        Active Projects
+                      </Link>
+                      <Link
+                        href="/projects/archived"
+                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        Archived
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Manage Section */}
@@ -143,8 +180,9 @@ export default function Sidebar() {
               </p>
               <div className="space-y-1">
                 {bottomMenuItems.map((item) => (
-                  <button
+                  <Link
                     key={item.id}
+                    href={item.linkTo}
                     onClick={() => setActiveMenu(item.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
                       ${
@@ -155,7 +193,7 @@ export default function Sidebar() {
                   >
                     <item.icon className="w-5 h-5" />
                     <span>{item.label}</span>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -164,32 +202,53 @@ export default function Sidebar() {
 
         {/* User Section */}
         <div className="p-4 border-t border-gray-200 bg-white">
-          <div
-            className={`flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer ${
-              collapsed ? "justify-center" : ""
-            }`}
-          >
-            <Avatar className="w-10 h-10 border-2 border-gray-200">
-              <AvatarImage src={displayUser.avatar || ""} alt={displayUser.fullName} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
-                {displayUser.fullName
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            {!collapsed && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {displayUser.fullName}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{displayUser.email}</p>
-                </div>
-                <Copy className="w-4 h-4 text-gray-400" />
-              </>
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div
+                className={`flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer ${
+                  collapsed ? "justify-center" : ""
+                }`}
+              >
+                <Avatar className="w-10 h-10 border-2 border-gray-200">
+                  <AvatarImage src={displayUser.avatar || ""} alt={displayUser.fullName} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+                    {displayUser.fullName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {displayUser.fullName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{displayUser.email}</p>
+                    </div>
+                    <Copy className="w-4 h-4 text-gray-400" />
+                  </>
+                )}
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="end" sideOffset={8}>
+              <DropdownMenuLabel className="text-gray-700">
+                {displayUser.fullName}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="cursor-pointer flex items-center">
+                  <User className="w-4 h-4 mr-2" /> Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 mr-2" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -198,7 +257,7 @@ export default function Sidebar() {
         className={`${collapsed ? "w-20" : "w-64"} hidden lg:block transition-all duration-300`}
       />
 
-      {/* Toggle button for mobile (bottom left corner) */}
+      {/* Mobile toggle button */}
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed bottom-6 left-6 lg:hidden bg-blue-600 text-white p-3 rounded-full shadow-md"

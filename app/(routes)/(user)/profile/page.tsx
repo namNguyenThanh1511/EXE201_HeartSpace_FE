@@ -219,7 +219,7 @@ export default function ProfilePage() {
   // Tablet view
   if (isTablet) {
     return (
-      <div className="min-h-screen h-screen flex flex-col pt-16">
+      <div className="min-h-screen h-screen flex flex-col ">
         <AnimatePresence mode="wait">
           {selectedTab && (
             <div className="mt-4">
@@ -272,10 +272,7 @@ export default function ProfilePage() {
   // Desktop view - original layout
   return (
     <>
-      <div className="min-h-screen flex flex-col pt-[100px] md:pt-[100px]">
-        <h1 className="text-2xl font-semibold mb-8 text-left px-8 md:px-16 lg:px-28">
-          Tài khoản của tôi
-        </h1>
+      <div className="min-h-screen flex flex-col ">
         <Tabs
           orientation="vertical"
           value={activeTab}
@@ -283,7 +280,7 @@ export default function ProfilePage() {
             updateTabInURL(value);
             setActiveTab(value);
           }}
-          className="w-full max-w-8xl px-8 md:px-16 lg:px-24"
+          className="w-full max-w-8xl "
         >
           <div className="flex gap-6">
             <TabsList className="shrink-0 grid grid-cols-1 p-0 bg-background min-w-[280px] relative">

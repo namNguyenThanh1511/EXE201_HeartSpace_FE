@@ -2,6 +2,7 @@ import { ApiResponse } from "@/types/api-type";
 import apiService from "./core";
 
 export interface User {
+  id: string;
   fullName: string;
   email: string;
   bio: string;

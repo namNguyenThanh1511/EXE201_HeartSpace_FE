@@ -1,4 +1,4 @@
-import userService, { User } from "@/services/api/user-service";
+import userService, { User, UserUpdatingRequest } from "@/services/api/user-service";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { ApiResponse } from "@/types/api-type";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,7 +37,8 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (profileData: Partial<User>) => userService.updateUserProfile(profileData),
+    mutationFn: (profileData: Partial<UserUpdatingRequest>) =>
+      userService.updateUserProfile(profileData),
     onSuccess: (data: ApiResponse<string>) => {
       if (data.isSuccess) {
         queryClient.invalidateQueries({ queryKey: ["users", "profile"] });

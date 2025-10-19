@@ -1,29 +1,12 @@
-import type React from "react";
-import type { Metadata } from "next";
-import "@/app/globals.css";
-import Header from "@/components/composite/header";
-import Footer from "@/components/composite/footer";
+import Sidebar from "@/components/composite/home-side-bar";
 
-//import { Inter } from 'next/font/google';
-
-//const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-  title: "HeartSpace - Nền Tảng hỗ trợ tâm lý ",
-  description:
-    "HeartSpace - Giải pháp hỗ trợ tâm lý toàn diện, đáng tin cậy. Chuyên cung cấp dịch vụ tư vấn tâm lý, trị liệu và hỗ trợ sức khỏe tâm thần với đội ngũ chuyên gia uy tín, tận tâm.",
-};
-
-export default function HomeLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function ConsultantLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className=" ">
-      <Header />
-      {children}
-      <Footer />
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 }

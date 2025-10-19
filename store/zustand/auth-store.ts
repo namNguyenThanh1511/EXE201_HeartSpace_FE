@@ -17,7 +17,52 @@ interface AuthState {
   login: (token: string, user: User) => void;
   logout: () => void;
   syncAuthState: () => void;
+  parseToken: (token: string) => User | null;
 }
+
+// Hàm parse JWT token
+const parseJwtToken = (token: string): User | null => {
+  try {
+    // JWT token có format: header.payload.signature
+    const base64Url = token.split(".")[1];
+    if (!base64Url) {
+      console.error("[AuthStore] Invalid JWT token format");
+      return null;
+    }
+
+    // Chuyển base64Url sang base64 thông thường
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+
+    // Decode base64
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
+
+    const payload = JSON.parse(jsonPayload);
+
+    // Map JWT payload sang User interface
+    const user: User = {
+      id: payload.sub || payload.id || payload.userId,
+      email: payload.email,
+      name: payload.name || payload.username,
+      role: payload.role || payload.roles?.[0] || "client",
+      avatar: payload.avatar || payload.picture,
+      // Thêm các trường khác tùy theo cấu trúc JWT của bạn
+      ...payload,
+    };
+
+    console.log("[AuthStore] Parsed user from token:", user);
+    return user;
+  } catch (error) {
+    console.error("[AuthStore] Error parsing JWT token:", error);
+    return null;
+  }
+};
 
 export const useAuthStore = create<AuthState>((set, _get) => ({
   token: null,
@@ -29,6 +74,14 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
     if (token) {
       setCookie("auth-token", token, getAuthCookieConfig());
       apiService.setAuthToken(token);
+
+      // Tự động parse user từ token khi set token
+      const user = parseJwtToken(token);
+      if (user) {
+        set({ token, user, isAuthenticated: true });
+      } else {
+        set({ token, isAuthenticated: true });
+      }
     } else {
       // Use same config for deletion as for setting
       const cookieConfig = getAuthCookieConfig();
@@ -38,9 +91,13 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         secure: cookieConfig.secure,
       });
       apiService.setAuthToken(null);
-    }
 
-    set({ token, isAuthenticated: !!token });
+      set({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+      });
+    }
   },
 
   setUser: (user) => set({ user }),
@@ -84,8 +141,13 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
           if (cookieHasToken) {
             // Set the API token immediately when syncing from cookie
             apiService.setAuthToken(cookieToken as string);
+
+            // Parse user từ token khi sync
+            const user = parseJwtToken(cookieToken as string);
+
             return {
               token: cookieToken as string,
+              user,
               isAuthenticated: true,
             };
           } else {
@@ -93,6 +155,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
             apiService.setAuthToken(null);
             return {
               token: null,
+              user: null,
               isAuthenticated: false,
             };
           }
@@ -108,6 +171,10 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         };
       });
     }
+  },
+
+  parseToken: (token: string) => {
+    return parseJwtToken(token);
   },
 }));
 
@@ -129,7 +196,15 @@ const initializeAuth = () => {
       if (!state.token || state.token !== cookieToken) {
         console.log("[AuthStore] Syncing store from cookie");
         apiService.setAuthToken(cookieToken as string);
-        state.setToken(cookieToken as string);
+
+        // Parse user từ token
+        const user = state.parseToken(cookieToken as string);
+        if (user) {
+          state.setToken(cookieToken as string);
+          state.setUser(user);
+        } else {
+          state.setToken(cookieToken as string);
+        }
       } else {
         // Store already has correct token, just ensure API service has it
         apiService.setAuthToken(cookieToken as string);

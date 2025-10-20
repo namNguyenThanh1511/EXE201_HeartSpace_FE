@@ -62,6 +62,17 @@ export class ApiService {
           config.headers.Authorization = `Bearer ${this.authToken}`;
         }
 
+        // Helpful debug in development: log URL and auth header presence
+        try {
+          if (process.env.NODE_ENV === "development") {
+            // Avoid logging sensitive token value
+            const hasAuth = !!config.headers?.Authorization;
+            console.log(`[ApiService] Request: ${config.method?.toUpperCase() || "GET"} ${config.url} - Authorization: ${hasAuth}`);
+          }
+        } catch {
+          // ignore
+        }
+
         // Handle FormData automatically
         if (config.data instanceof FormData) {
           delete config.headers["Content-Type"];

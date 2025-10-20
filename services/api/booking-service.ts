@@ -69,7 +69,7 @@ export const bookingService = {
     queryParams?: AppointmentQueryParams
   ): Promise<ApiResponse<AppointmentDetailResponse[]>> => {
     const params = Object.fromEntries(
-      Object.entries(queryParams || {}).filter(([_, v]) => v !== undefined && v !== null)
+      Object.entries(queryParams || {}).filter(([, v]) => v !== undefined && v !== null)
     );
 
     const response = await apiService.get<ApiResponse<AppointmentDetailResponse[]>>(
@@ -87,16 +87,34 @@ export const bookingService = {
     return response.data;
   },
 
-  // Update appointment status (for consultants)
+  // Update appointment (confirm/reject/reschedule) — use PATCH /api/appointments/{id}
+  // Payload example: { for: 'ConfirmAppointment', notes?: string }
   updateAppointmentStatus: async (
     id: string,
-    status: string
+    payload: Record<string, unknown>
   ): Promise<ApiResponse<AppointmentResponse>> => {
-    const response = await apiService.patch<ApiResponse<AppointmentResponse>>(
-      `/api/appointments/${id}/status`,
-      { status }
-    );
-    return response.data;
+    if (process.env.NODE_ENV === "development") {
+      console.log("[bookingService] updateAppointmentStatus payload:", { id, payload });
+    }
+
+    try {
+      // Backend expects the body shape: { request: { ...fields } }
+      const response = await apiService.patch<ApiResponse<AppointmentResponse>>(
+        `/api/appointments/${id}`,
+        { request: payload }
+      );
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("[bookingService] updateAppointmentStatus response:", response);
+      }
+
+      return response.data;
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[bookingService] updateAppointmentStatus error:", error);
+      }
+      throw error;
+    }
   },
 
   // Get my appointments (for current user)

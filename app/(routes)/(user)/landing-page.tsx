@@ -194,7 +194,7 @@ export default function HeartspaceLanding() {
                     ))}
                   </div>
                   <p className="text-xl text-center text-slate-200 italic mb-8">
-                    "{testimonials[currentTestimonial].quote}"
+                    &quot;{testimonials[currentTestimonial].quote}&quot;
                   </p>
                   <div className="flex items-center justify-center gap-4">
                     <Avatar className="w-16 h-16">

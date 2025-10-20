@@ -1,30 +1,13 @@
-import React from "react";
+// app/(routes)/(consultant)/layout.tsx
+import Sidebar from "@/components/composite/admin-side-bar";
 
-import { SidebarProvider } from "@/components/ui/sidebar";
-
-import { Metadata } from "next";
-import { ThemeProvider } from "@/context/providers/theme-provider";
-import { AppSidebarAdmin } from "@/components/features/admin/app-sidebar-admin";
-
-export const metadata: Metadata = {
-  title: "HeartSpace Dashboard",
-  icons: {
-    icon: "/LOGO_RV_red-01-01.png",
-    apple: "/LOGO_RV_red-01-01.png",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function ConsultantLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <SidebarProvider>
-        <AppSidebarAdmin variant="inset" collapsible="icon" />
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950 overflow-y-auto">
         {children}
-      </SidebarProvider>
-    </ThemeProvider>
+      </main>
+    </div>
   );
 }

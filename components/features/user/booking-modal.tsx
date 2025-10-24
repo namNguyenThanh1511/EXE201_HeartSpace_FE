@@ -53,9 +53,6 @@ export function BookingModal({
       scheduleId,
       notes: notes.trim(),
     };
-
-    console.log(bookingRequest);
-    console.log("hello");
     bookAppointment(bookingRequest, {
       onSuccess: (data) => {
         if (data.isSuccess) {

@@ -45,15 +45,20 @@ export interface AppointmentQueryParams {
 
 export const bookingService = {
   // Book an appointment
-  bookAppointment: async (
-    request: AppointmentBookingRequest
-  ): Promise<ApiResponse<AppointmentResponse>> => {
-    console.log(request);
-    const response = await apiService.post<ApiResponse<AppointmentResponse>>("/api/appointments", {
-      ...request,
-    });
-
-    return response.data;
+  bookAppointment: async (request: AppointmentBookingRequest): Promise<any> => {
+    try {
+      console.log("➡️ Booking Request:", request);
+      const response = await apiService.post("/api/appointments", request);
+      console.log("✅ Booking Response:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Booking Error:", error);
+      // Nếu backend trả về lỗi dạng { message, isSuccess: false, ... }
+      if (error.error) {
+        return error.error; // để onError/onSuccess vẫn nhận được body backend
+      }
+      throw error;
+    }
   },
 
   // Get appointment by ID

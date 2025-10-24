@@ -4,46 +4,13 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-type Booking = {
-  id: string;
-  title: string;
-  doctor: string;
-  start: string; // ISO
-  end: string;   // ISO
-  meetingUrl: string;
-  location?: string;
-};
-
-const mockBookings: Booking[] = [
-  {
-    id: "bk-1001",
-    title: "Khám tim mạch",
-    doctor: "Dr. Ethan Leo",
-    start: new Date().toISOString().slice(0, 10) + "T09:00:00",
-    end: new Date().toISOString().slice(0, 10) + "T10:00:00",
-    meetingUrl: "https://teams.microsoft.com/l/meetup-join/abc",
-    location: "Online",
-  },
-  {
-    id: "bk-1002",
-    title: "Tư vấn da liễu",
-    doctor: "Dr. Ava Stone",
-    start: new Date(Date.now() + 86400000).toISOString().slice(0, 10) + "T19:30:00",
-    end: new Date(Date.now() + 86400000).toISOString().slice(0, 10) + "T20:30:00",
-    meetingUrl: "https://meet.google.com/xyz-1234-xyz",
-    location: "Online",
-  },
-  {
-    id: "bk-1003",
-    title: "Khám nhi",
-    doctor: "Dr. Liam Park",
-    start: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10) + "T08:00:00",
-    end: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10) + "T09:00:00",
-    meetingUrl: "https://zoom.us/j/1234567890",
-    location: "Phòng khám số 2",
-  },
-];
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMyAppointments } from "@/hooks/services/use-appointment-service";
+import type { AppointmentDetailResponse } from "@/services/api/booking-service";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function formatDayKey(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -54,73 +21,142 @@ function toLocalHM(iso: string) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function HistoryPage() {
-  const grouped = useMemo(() => {
-    const map: Record<string, Booking[]> = {};
-    for (const b of mockBookings) {
-      const key = formatDayKey(new Date(b.start));
-      if (!map[key]) map[key] = [];
-      map[key].push(b);
-    }
-    return map;
-  }, []);
+function normalizeStatus(status: string): "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled" {
+  const s = (status || "").toLowerCase();
+  if (s === "pending") return "Pending";
+  if (s === "approved" || s === "approve" || s === "confirm" || s === "confirmed") return "Approved";
+  if (s === "rejected" || s === "reject") return "Rejected";
+  if (s === "completed" || s === "complete") return "Completed";
+  if (s === "cancelled" || s === "canceled" || s === "cancel") return "Cancelled";
+  return "Pending";
+}
 
-  const days = useMemo(() => {
-    const start = new Date();
-    // start from Monday of current week
-    const day = start.getDay();
-    const diff = (day === 0 ? -6 : 1 - day); // Monday index 1
-    const monday = new Date(start);
-    monday.setDate(start.getDate() + diff);
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return d;
-    });
-  }, []);
+function getStatusBadgeVariant(status: string) {
+  switch (normalizeStatus(status)) {
+    case "Pending":
+      return "secondary" as const;
+    case "Approved":
+      return "default" as const;
+    case "Rejected":
+      return "destructive" as const;
+    case "Completed":
+      return "outline" as const;
+    case "Cancelled":
+      return "destructive" as const;
+    default:
+      return "secondary" as const;
+  }
+}
+
+function getStatusText(status: string) {
+  switch (normalizeStatus(status)) {
+    case "Pending":
+      return "Chờ duyệt";
+    case "Approved":
+      return "Đã duyệt";
+    case "Rejected":
+      return "Đã từ chối";
+    case "Completed":
+      return "Hoàn thành";
+    case "Cancelled":
+      return "Đã hủy";
+    default:
+      return status;
+  }
+}
+
+export default function HistoryPage() {
+  const { data, isLoading } = useMyAppointments({ pageNumber: 1, pageSize: 200 });
+  const items: AppointmentDetailResponse[] = (data?.appointments || []).map((a) => ({
+    ...a,
+    schedule: a.schedule || {
+      id: a.scheduleId,
+      startTime: a.createdAt,
+      endTime: a.updatedAt,
+      isAvailable: false,
+    },
+  })) as AppointmentDetailResponse[];
+
+  function daysBetween(startIso?: string, endIso?: string) {
+    if (!startIso || !endIso) return 0;
+    const s = new Date(startIso);
+    const e = new Date(endIso);
+    const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diff);
+  }
 
   return (
-    <div className="container mx-auto max-w-6xl py-8">
-      <div className="mb-6 text-center">
-        <h1 className="text-3xl font-semibold">Lịch đã đặt</h1>
-        <p className="text-muted-foreground mt-2">Xem lịch theo tuần. Nhấn vào sự kiện để mở phòng họp và chi tiết.</p>
+    <div className="container mx-auto max-w-7xl py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Lịch đã đặt</h1>
+          <p className="text-sm text-muted-foreground">Danh sách các cuộc hẹn của bạn</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Input placeholder="Tìm kiếm" className="w-64" />
+          <Button variant="outline">Filter</Button>
+          <Button>Form</Button>
+        </div>
       </div>
 
-      {/* Week grid inspired by Google Calendar */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
-        {days.map((d) => {
-          const key = formatDayKey(d);
-          const isToday = formatDayKey(new Date()) === key;
-          const events = grouped[key] || [];
-          return (
-            <Card key={key} className={isToday ? "border-primary" : undefined}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  {d.toLocaleDateString([], { weekday: "short" })} {d.getDate()}/{d.getMonth() + 1}
-                </CardTitle>
-                {isToday && <CardDescription>Hôm nay</CardDescription>}
-              </CardHeader>
-              <CardContent className="pt-0">
-                {events.length === 0 ? (
-                  <div className="text-muted-foreground text-sm">Không có lịch</div>
+      <Card>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tên</TableHead>
+                  <TableHead>Dịch vụ</TableHead>
+                  <TableHead>Ghi chú</TableHead>
+                  <TableHead>Ngày nhận</TableHead>
+                  <TableHead>Ngày trả</TableHead>
+                  <TableHead>Số ngày</TableHead>
+                  <TableHead>Hành động</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">Đang tải dữ liệu...</TableCell>
+                  </TableRow>
+                ) : items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">Không có lịch</TableCell>
+                  </TableRow>
                 ) : (
-                  <div className="flex flex-col gap-3">
-                    {events.map((ev) => (
-                      <Link key={ev.id} href={`/meeting/${ev.id}`} className="rounded-md border p-3 hover:bg-accent">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">{ev.title}</div>
-                          <Badge variant="secondary">{toLocalHM(ev.start)} - {toLocalHM(ev.end)}</Badge>
+                  items.map((ev) => (
+                    <TableRow key={ev.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={ev.consultant?.avatar || undefined} alt={ev.consultant?.fullName || "A"} />
+                            <AvatarFallback>{(ev.consultant?.fullName || "U").charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{ev.consultant?.fullName || "Khách"}</div>
+                            <div className="text-xs text-muted-foreground">{ev.consultant?.email || ""}</div>
+                          </div>
                         </div>
-                        <div className="text-muted-foreground text-sm">{ev.doctor} • {ev.location || "Online"}</div>
-                      </Link>
-                    ))}
-                  </div>
+                      </TableCell>
+                      <TableCell> Tư vấn tâm lý </TableCell>
+                      <TableCell className="max-w-xs truncate">{ev.notes || "-"}</TableCell>
+                      <TableCell>{ev.schedule?.startTime ? new Date(ev.schedule.startTime).toLocaleDateString() : "-"}</TableCell>
+                      <TableCell>{ev.schedule?.endTime ? new Date(ev.schedule.endTime).toLocaleDateString() : "-"}</TableCell>
+                      <TableCell>{daysBetween(ev.schedule?.startTime, ev.schedule?.endTime)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/meeting/${ev.id}`} className="text-sm text-primary hover:underline">Mở</Link>
+                          <Link href={`/user/consultants/${ev.consultant?.id || ""}`} className="text-sm text-muted-foreground hover:underline">Hồ sơ</Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

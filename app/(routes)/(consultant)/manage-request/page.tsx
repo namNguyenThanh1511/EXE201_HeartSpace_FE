@@ -128,6 +128,14 @@ export default function ManageRequestPage() {
   const handleConfirmAction = async () => {
     if (!selectedRequest || !actionType) return;
 
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[ManageRequest] handleConfirmAction start", {
+        actionType,
+        selectedRequestId: selectedRequest.id,
+        responseNotes,
+      });
+    }
+
     // If rejecting, require a meaningful reason to avoid backend validation errors
     if (actionType === "reject") {
       const reason = responseNotes?.trim() || "";
@@ -139,43 +147,53 @@ export default function ManageRequestPage() {
 
     try {
       const trimmedNotes = responseNotes?.trim() || "";
+
       if (actionType === "approve") {
         const approvePayload = trimmedNotes
-          ? { for: "confirmAppointment", notes: trimmedNotes }
-          : { for: "confirmAppointment" };
+          ? { for: "ConfirmAppointment", notes: trimmedNotes }
+          : { for: "ConfirmAppointment" };
 
         if (process.env.NODE_ENV === "development") {
           console.debug("[ManageRequest] Approve payload:", { id: selectedRequest.id, approvePayload });
         }
 
-        await updateAppointmentMutation.mutateAsync({
+        const res = await updateAppointmentMutation.mutateAsync({
           id: selectedRequest.id,
           payload: approvePayload,
         });
-      } else {
-        // Reject flow: try lowercase action first, then PascalCase fallback for backend variants
-        const reasonVariants = {
-          reasonForCancellation: trimmedNotes,
-          cancellationReason: trimmedNotes,
-          reason: trimmedNotes,
-          rejectReason: trimmedNotes,
-        } as const;
-        const rejectPrimary = { for: "rejectAppointment", ...reasonVariants } as Record<string, unknown>;
-        const rejectFallback = { for: "RejectAppointment", ...reasonVariants } as Record<string, unknown>;
 
         if (process.env.NODE_ENV === "development") {
-          console.debug("[ManageRequest] Reject primary payload:", { id: selectedRequest.id, rejectPrimary });
+          console.debug("[ManageRequest] Approve response:", res);
+        }
+      } else {
+        // Reject flow: try a payload shape the backend may accept
+        const rejectPayload = { for: "RejectAppointment", notes: trimmedNotes } as Record<string, unknown>;
+
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[ManageRequest] Reject payload:", { id: selectedRequest.id, rejectPayload });
         }
 
         try {
-          await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: rejectPrimary });
+          const res = await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: rejectPayload });
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[ManageRequest] Reject response (primary):", res);
+          }
         } catch (err: unknown) {
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[ManageRequest] Reject primary failed:", err);
+          }
+
           const e = err as { status?: number; message?: string };
+          // If validation error, try an alternate payload shape
           if (e?.status === 400) {
+            const altPayload = { for: "rejectAppointment", reason: trimmedNotes } as Record<string, unknown>;
             if (process.env.NODE_ENV === "development") {
-              console.debug("[ManageRequest] 400 on primary, retrying with fallback payload", { rejectFallback });
+              console.debug("[ManageRequest] Retrying reject with alt payload:", { id: selectedRequest.id, altPayload });
             }
-            await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: rejectFallback });
+            const res2 = await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: altPayload });
+            if (process.env.NODE_ENV === "development") {
+              console.debug("[ManageRequest] Reject response (fallback):", res2);
+            }
           } else {
             throw err;
           }
@@ -190,6 +208,8 @@ export default function ManageRequestPage() {
       if (process.env.NODE_ENV === "development") {
         console.debug("[ManageRequest] updateAppointmentMutation failed", finalErr);
       }
+      console.error("[ManageRequest] update error:", finalErr);
+      toast({ title: 'Không thể cập nhật trạng thái', variant: 'destructive' });
     }
   };
 

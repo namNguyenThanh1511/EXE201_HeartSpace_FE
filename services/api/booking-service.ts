@@ -76,7 +76,46 @@ export const bookingService = {
       "/api/appointments",
       params as Record<string, string | number | boolean | string[]>
     );
-    return response.data;
+    // Normalize items: some backends return only flat IDs (scheduleId, consultantId) without nested objects
+    // Ensure UI-friendly shape by adding minimal `schedule` and `consultant` objects when missing
+    try {
+      const items = Array.isArray(response.data.data)
+        ? response.data.data.map((it: unknown) => {
+            const item = it as Record<string, unknown>;
+            return {
+              ...item,
+              schedule:
+                item.schedule ||
+                (item.scheduleId
+                  ? {
+                      id: item.scheduleId,
+                      startTime: item.startTime || item.createdAt,
+                      endTime: item.endTime || item.updatedAt,
+                      isAvailable: false,
+                    }
+                  : undefined),
+              consultant:
+                item.consultant ||
+                (item.consultantId
+                  ? {
+                      id: item.consultantId,
+                      fullName: undefined,
+                      email: undefined,
+                      phoneNumber: undefined,
+                      avatar: null,
+                    }
+                  : undefined),
+            } as AppointmentDetailResponse;
+          })
+        : (response.data.data as AppointmentDetailResponse[]);
+
+      return {
+        ...response.data,
+        data: items,
+      } as ApiResponse<AppointmentDetailResponse[]>;
+    } catch {
+      return response.data;
+    }
   },
 
   // Cancel an appointment
@@ -94,7 +133,7 @@ export const bookingService = {
     payload: Record<string, unknown>
   ): Promise<ApiResponse<AppointmentResponse>> => {
     if (process.env.NODE_ENV === "development") {
-      console.log("[bookingService] updateAppointmentStatus payload:", { id, payload });
+      console.debug("[bookingService] updateAppointmentStatus payload:", { id, payload });
     }
 
     try {
@@ -105,13 +144,13 @@ export const bookingService = {
       );
 
       if (process.env.NODE_ENV === "development") {
-        console.log("[bookingService] updateAppointmentStatus response:", response);
+        console.debug("[bookingService] updateAppointmentStatus response:", response?.data || response);
       }
 
       return response.data;
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("[bookingService] updateAppointmentStatus error:", error);
+        console.debug("[bookingService] updateAppointmentStatus error:", error);
       }
       throw error;
     }
@@ -122,13 +161,26 @@ export const bookingService = {
     queryParams?: Omit<AppointmentQueryParams, "clientId" | "consultantId">
   ): Promise<ApiResponse<AppointmentDetailResponse[]>> => {
     const params = Object.fromEntries(
-      Object.entries(queryParams || {}).filter(([_, v]) => v !== undefined && v !== null)
+      Object.entries(queryParams || {}).filter(([, v]) => v !== undefined && v !== null)
     );
 
-    const response = await apiService.get<ApiResponse<AppointmentDetailResponse[]>>(
-      "/api/appointments/my-appointments",
-      params as Record<string, string | number | boolean | string[]>
-    );
-    return response.data;
+    try {
+      const response = await apiService.get<ApiResponse<AppointmentDetailResponse[]>>(
+        "/api/appointments/my-appointments",
+        params as Record<string, string | number | boolean | string[]>
+      );
+      return response.data;
+    } catch (err) {
+      // If GET fails (405 or other), try POST fallback
+      try {
+        const response = await apiService.post<ApiResponse<AppointmentDetailResponse[]>>(
+          "/api/appointments/my-appointments",
+          params as Record<string, unknown>
+        );
+        return response.data;
+      } catch (postErr) {
+        throw postErr || err;
+      }
+    }
   },
 };

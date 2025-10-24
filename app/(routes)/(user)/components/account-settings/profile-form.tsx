@@ -225,18 +225,6 @@ export function ProfileForm({ profile, onSuccess, onCancel }: ProfileFormProps) 
           values.consultantInfo.certifications !== currentConsultantInfo.certifications ||
           JSON.stringify(values.consultantInfo.consultingIn) !==
             JSON.stringify(currentConsultantInfo.consultingIn);
-
-        if (consultantInfoChanged) {
-          profileData.consultantInfo = {
-            specialization: values.consultantInfo.specialization || "",
-            experienceYears: values.consultantInfo.experienceYears || 0,
-            hourlyRate: values.consultantInfo.hourlyRate || 0,
-            certifications: values.consultantInfo.certifications || "",
-            consultingsAt:
-              values.consultantInfo.consultingIn?.map((consulting) => parseInt(consulting.id)) ||
-              [],
-          };
-        }
       }
 
       // Chỉ gửi request nếu có ít nhất một field thay đổi

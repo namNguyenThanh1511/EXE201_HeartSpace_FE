@@ -25,8 +25,8 @@ import { BookingModal } from "@/components/features/user/booking-modal";
 
 // Mock data for fields not available in API
 const mockData = {
-  rating: 4.9,
-  totalRatings: 70,
+  rating: 5.0,
+  totalRatings: 10,
   location: "United Kingdom",
   testimonials: [
     {
@@ -159,7 +159,7 @@ export default function ConsultantProfile() {
                   {consultant.isActive && (
                     <Badge className="bg-blue-600 text-white">
                       <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Đang hoạt động
+                      Verified
                     </Badge>
                   )}
                 </div>

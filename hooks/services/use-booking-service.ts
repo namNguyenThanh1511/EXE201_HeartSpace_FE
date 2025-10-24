@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 export const useBookAppointment = () => {
   const queryClient = useQueryClient();
-  console.log("hshs");
   return useMutation({
     mutationFn: (request: AppointmentBookingRequest) => bookingService.bookAppointment(request),
     onSuccess: (data) => {

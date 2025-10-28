@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { useChangePassword } from "@/hooks/useAuth";
+
 import { toast } from "sonner";
 
 interface PasswordFormProps {
@@ -45,8 +45,6 @@ export function PasswordForm({ onSuccess, onCancel }: PasswordFormProps) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { changePassword, isLoading, error } = useChangePassword();
-
   const form = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -60,11 +58,11 @@ export function PasswordForm({ onSuccess, onCancel }: PasswordFormProps) {
     setIsSubmitting(true);
 
     try {
-      changePassword({
-        oldPassword: values.oldPassword,
-        newPassword: values.newPassword,
-        confirmPassword: values.confirmPassword,
-      });
+      // changePassword({
+      //   oldPassword: values.oldPassword,
+      //   newPassword: values.newPassword,
+      //   confirmPassword: values.confirmPassword,
+      // });
     } catch (error) {
       console.error("Form submission error:", error);
       toast.error("Đã xảy ra lỗi khi gửi form.");
@@ -73,16 +71,16 @@ export function PasswordForm({ onSuccess, onCancel }: PasswordFormProps) {
   };
 
   // Handle success and error states
-  useEffect(() => {
-    if (!isLoading && !error) {
-      // Success case - form was submitted and no error
-      if (isSubmitting) {
-        form.reset();
-        onSuccess?.();
-        setIsSubmitting(false);
-      }
-    }
-  }, [isLoading, error, isSubmitting, form, onSuccess]);
+  // useEffect(() => {
+  //   if (!isLoading && !error) {
+  //     // Success case - form was submitted and no error
+  //     if (isSubmitting) {
+  //       form.reset();
+  //       onSuccess?.();
+  //       setIsSubmitting(false);
+  //     }
+  //   }
+  // }, [isLoading, error, isSubmitting, form, onSuccess]);
 
   return (
     <Form {...form}>
@@ -196,29 +194,6 @@ export function PasswordForm({ onSuccess, onCancel }: PasswordFormProps) {
             <li>• Chứa ít nhất 1 chữ thường</li>
             <li>• Chứa ít nhất 1 số</li>
           </ul>
-        </div>
-
-        <div className="flex gap-3 justify-end pt-4">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSubmitting || isLoading}
-            >
-              Hủy
-            </Button>
-          )}
-          <Button type="submit" disabled={isSubmitting || isLoading}>
-            {isSubmitting || isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang đổi mật khẩu
-              </>
-            ) : (
-              "Đổi mật khẩu"
-            )}
-          </Button>
         </div>
       </form>
     </Form>

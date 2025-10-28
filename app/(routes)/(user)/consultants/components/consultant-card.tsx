@@ -44,6 +44,7 @@ export interface Consultant {
 
 interface ConsultantCardProps {
   consultant: Consultant;
+  onMoreClick?: (consultant: Consultant) => void;
 }
 
 export function ConsultantCard({ consultant }: ConsultantCardProps) {

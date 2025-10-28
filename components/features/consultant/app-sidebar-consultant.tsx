@@ -26,7 +26,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavMain } from "@/components/nav-main";
-import { NavUser } from "../user/nav-user";
+
 import Link from "next/link";
 
 export function AppSidebarConsultant({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -115,9 +115,7 @@ export function AppSidebarConsultant({ ...props }: React.ComponentProps<typeof S
       <SidebarContent>
         <NavMain items={navigationData.navMain} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
   );
 }

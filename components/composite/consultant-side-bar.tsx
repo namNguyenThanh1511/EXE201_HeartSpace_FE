@@ -39,7 +39,7 @@ export default function ConsultantSidebar() {
   const menuItems = [
     { id: "search", label: "Search", icon: Search, linkTo: "/search" },
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
-    { id: "schedule", label: "Schedule", icon: Calendar, hasSubmenu: true },
+    { id: "appointments", label: "Appointments", icon: Calendar, hasSubmenu: true },
     { id: "messages", label: "Messages", icon: MessageSquare, linkTo: "/messages" },
 
   ];
@@ -121,7 +121,7 @@ export default function ConsultantSidebar() {
                   {!collapsed && item.hasSubmenu && (
                     <ChevronDown
                       className={`w-4 h-4 transition-transform ${
-                        scheduleExpanded && item.id === "schedule" ? "rotate-180" : ""
+                        scheduleExpanded && item.id === "appointments" ? "rotate-180" : ""
                       }`}
                     />
                   )}
@@ -139,7 +139,7 @@ export default function ConsultantSidebar() {
                     <button
                       onClick={() => {
                         setActiveMenu(item.id);
-                        if (item.id === "schedule") {
+                        if (item.id === "appointments") {
                           setScheduleExpanded(!scheduleExpanded);
                         }
                       }}
@@ -150,16 +150,16 @@ export default function ConsultantSidebar() {
                   )}
 
                   {/* Submenu */}
-                  {!collapsed && item.id === "schedule" && scheduleExpanded && (
+                  {!collapsed && item.id === "appointments" && scheduleExpanded && (
                     <div className="ml-8 mt-1 space-y-1">
                       <Link
-                        href="/schedule/active"
+                        href="/appointments/active"
                         className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
-                        Active Schedule
+                        Active Appointments
                       </Link>
                       <Link
-                        href="/schedule/archived"
+                        href="/appointments/archived"
                         className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         Archived

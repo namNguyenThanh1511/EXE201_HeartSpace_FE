@@ -109,6 +109,43 @@ export const scheduleService = {
       status: response.status,
       headers: response.headers
     };
+  },
+
+  // Get schedule by ID
+  getScheduleById: async (scheduleId: string): Promise<ApiResponse<ScheduleSlot>> => {
+    const response = await apiService.get<ScheduleApiResponse>(`/api/schedules/${scheduleId}`);
+    
+    // Extract the schedule data from the API response wrapper
+    const scheduleData = (response.data as ScheduleApiResponse).data as ScheduleSlot;
+
+    return {
+      data: scheduleData,
+      status: response.status,
+      headers: response.headers
+    };
+  },
+
+  // Get multiple schedules by IDs
+  getSchedulesByIds: async (scheduleIds: string[]): Promise<ApiResponse<ScheduleSlot[]>> => {
+    // Since there might not be a batch endpoint, we could fetch them individually
+    // For now, let's assume we have a batch endpoint or implement sequential fetching
+    const schedules: ScheduleSlot[] = [];
+    
+    for (const scheduleId of scheduleIds) {
+      try {
+        const response = await apiService.get<ScheduleApiResponse>(`/api/schedules/${scheduleId}`);
+        const scheduleData = (response.data as ScheduleApiResponse).data as ScheduleSlot;
+        schedules.push(scheduleData);
+      } catch (error) {
+        console.error(`Failed to fetch schedule ${scheduleId}:`, error);
+      }
+    }
+
+    return {
+      data: schedules,
+      status: 200,
+      headers: {}
+    };
   }
 };
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export default function PaymentSuccessPage() {
   return (
-    <div className="relative min-h-[80vh] w-full overflow-hidden">
+    <div className="relative min-h-screen w-full overflow-hidden bg-white supports-[min-height:100dvh]:min-h-[100dvh]">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-sky-50" />
       <div className="pointer-events-none absolute -top-1/3 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-emerald-200/30 blur-3xl" />
 

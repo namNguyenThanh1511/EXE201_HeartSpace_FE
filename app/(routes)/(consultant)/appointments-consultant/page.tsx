@@ -38,6 +38,7 @@ import {
 import { useMyAppointments } from "@/hooks/services/use-appointment-service";
 import type { AppointmentDetailResponse } from "@/services/api/appointment-service";
 import { scheduleService } from "@/services/api/schedule-service";
+import { useAppointmentById } from "@/hooks/services/use-appointment-id";
 
 /* ====================== Utils ====================== */
 function toLocalHM(iso?: string) {
@@ -54,16 +55,15 @@ function getInitials(name?: string) {
 }
 
 function getClientDisplayInfo(clientId?: string): { name: string; subText?: string } {
-  // Fallback to clientId if no name available
   return {
     name: clientId ? `Client ${clientId.slice(0, 8)}...` : "Chưa có thông tin",
-    subText: clientId ? `ID: ${clientId}` : undefined
+    subText: clientId ? `ID: ${clientId}` : undefined,
   };
 }
 
 function getPaymentStatusText(paymentStatus?: string) {
   if (!paymentStatus) return "Chưa có thông tin";
-  
+
   const status = paymentStatus.toLowerCase();
   switch (status) {
     case "pendingpayment":
@@ -80,7 +80,7 @@ function getPaymentStatusText(paymentStatus?: string) {
 
 function getPaymentStatusVariant(paymentStatus?: string) {
   if (!paymentStatus) return "secondary" as const;
-  
+
   const status = paymentStatus.toLowerCase();
   switch (status) {
     case "paid":
@@ -95,64 +95,52 @@ function getPaymentStatusVariant(paymentStatus?: string) {
   }
 }
 
-// Component để render từng appointment row
+/* ====================== AppointmentRow ====================== */
 function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
-  // Get client info
-  const clientInfo = getClientDisplayInfo(ev.clientId);
+  // ✅ Gọi API chi tiết appointment-id
+  const { data: detailData, isLoading: detailLoading } = useAppointmentById(ev.id);
+  const detail = detailData?.appointment;
+
+  // ✅ Lấy tên, thời gian bắt đầu/kết thúc/ngày từ API chi tiết
+  const clientName = detail?.client?.fullName || `Client ${ev.clientId?.slice(0, 8)}...`;
+  const startTime = detail?.schedule?.startTime || ev.schedule?.startTime || ev.createdAt;
+  const endTime = detail?.schedule?.endTime || ev.schedule?.endTime || ev.updatedAt;
+  const appointmentDate = new Date(startTime);
+
+  // ✅ Các thông tin còn lại giữ nguyên logic cũ
   const paymentStatusText = getPaymentStatusText(ev.paymentStatus);
   const paymentStatusVariant = getPaymentStatusVariant(ev.paymentStatus);
-  
-  // Endpoint /api/schedules/{scheduleId} trả về 404, vì vậy không fetch schedule nữa
-  // Sử dụng schedule có sẵn trong appointment nếu có, nếu không thì dùng createdAt và updatedAt
-  const schedule = ev.schedule;
-  
-  // Xác định start và end time
-  // Nếu có schedule trong appointment thì dùng schedule.startTime và schedule.endTime
-  // Nếu không có thì fallback về createdAt và updatedAt
-  const startTime = schedule?.startTime || ev.createdAt;
-  const endTime = schedule?.endTime || ev.updatedAt;
-  
-  // Ngày lấy từ date của startTime
-  const appointmentDate = new Date(startTime);
 
   return (
     <TableRow key={ev.id}>
       <TableCell>
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>
-              {getInitials(clientInfo.name)}
-            </AvatarFallback>
+            <AvatarFallback>{getInitials(clientName)}</AvatarFallback>
           </Avatar>
           <div className="space-y-0.5">
             <div className="font-medium leading-none">
-              {clientInfo.name}
+              {detailLoading ? "Đang tải..." : clientName}
             </div>
-            {clientInfo.subText && (
-              <div className="text-xs text-muted-foreground">
-                {clientInfo.subText}
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">ID: {ev.clientId}</div>
           </div>
         </div>
       </TableCell>
 
       <TableCell className="whitespace-nowrap">
-        {toLocalHM(startTime)}
+        {detailLoading ? "..." : toLocalHM(startTime)}
       </TableCell>
 
       <TableCell className="whitespace-nowrap">
-        {toLocalHM(endTime)}
+        {detailLoading ? "..." : toLocalHM(endTime)}
       </TableCell>
 
       <TableCell className="whitespace-nowrap">
-        {appointmentDate.toLocaleDateString('vi-VN')}
+        {detailLoading ? "..." : appointmentDate.toLocaleDateString("vi-VN")}
       </TableCell>
 
       <TableCell>
-        <Badge variant={paymentStatusVariant}>
-          {paymentStatusText}
-        </Badge>
+        <Badge variant={paymentStatusVariant}>{paymentStatusText}</Badge>
       </TableCell>
 
       <TableCell className="text-right">
@@ -161,13 +149,13 @@ function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
             href={`/meeting/${ev.id}`}
             className="text-sm text-primary hover:underline"
           >
-            Mở
+          
           </Link>
           <Link
             href={`/user/consultants/${ev.consultant?.id || ev.consultantId}`}
             className="text-sm text-muted-foreground hover:underline"
           >
-            Chi tiết
+         
           </Link>
         </div>
       </TableCell>
@@ -182,8 +170,11 @@ export default function ConsultantAppointmentsPage() {
   const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState<"30" | "60">("30");
   const [creating, setCreating] = useState(false);
-  
-  const { data, isLoading, isError, refetch } = useMyAppointments({ pageNumber: 1, pageSize: 200 });
+
+  const { data, isLoading, isError, refetch } = useMyAppointments({
+    pageNumber: 1,
+    pageSize: 200,
+  });
 
   const handleCreateSchedule = async () => {
     if (!startTime) {
@@ -224,7 +215,6 @@ export default function ConsultantAppointmentsPage() {
     setIsCreateDialogOpen(true);
   };
 
-  // Search theo tên client/ghi chú/trạng thái thanh toán
   const items = useMemo(() => {
     const rawItems = (data?.appointments || []) as AppointmentDetailResponse[];
     if (!query.trim()) return rawItems;
@@ -235,7 +225,12 @@ export default function ConsultantAppointmentsPage() {
       const notes = ev.notes?.toLowerCase() || "";
       const paymentStatus = ev.paymentStatus?.toLowerCase() || "";
       const clientId = ev.clientId?.toLowerCase() || "";
-      return clientName.includes(q) || notes.includes(q) || paymentStatus.includes(q) || clientId.includes(q);
+      return (
+        clientName.includes(q) ||
+        notes.includes(q) ||
+        paymentStatus.includes(q) ||
+        clientId.includes(q)
+      );
     });
   }, [data?.appointments, query]);
 
@@ -266,21 +261,42 @@ export default function ConsultantAppointmentsPage() {
         </div>
       </div>
 
-      {/* Quick action buttons */}
       <div className="mb-6 flex gap-2">
-        <Button variant="outline" onClick={() => handleQuickCreate(9)} className="flex-1">
+        <Button
+          variant="outline"
+          onClick={() => handleQuickCreate(9)}
+          className="flex-1"
+        >
           <Clock className="h-4 w-4 mr-2" />
           Sáng 9h - 30p
         </Button>
-        <Button variant="outline" onClick={() => { setDuration("60"); handleQuickCreate(9); }} className="flex-1">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setDuration("60");
+            handleQuickCreate(9);
+          }}
+          className="flex-1"
+        >
           <Clock className="h-4 w-4 mr-2" />
           Sáng 9h - 60p
         </Button>
-        <Button variant="outline" onClick={() => handleQuickCreate(14)} className="flex-1">
+        <Button
+          variant="outline"
+          onClick={() => handleQuickCreate(14)}
+          className="flex-1"
+        >
           <Clock className="h-4 w-4 mr-2" />
           Chiều 14h - 30p
         </Button>
-        <Button variant="outline" onClick={() => { setDuration("60"); handleQuickCreate(14); }} className="flex-1">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setDuration("60");
+            handleQuickCreate(14);
+          }}
+          className="flex-1"
+        >
           <Clock className="h-4 w-4 mr-2" />
           Chiều 14h - 60p
         </Button>
@@ -293,10 +309,10 @@ export default function ConsultantAppointmentsPage() {
             {isLoading
               ? "Đang tải dữ liệu lịch hẹn…"
               : isError
-                ? "❌ Lỗi kết nối API. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau."
-                : data?.isSuccess 
-                  ? (data?.message || "Danh sách các cuộc hẹn với khách hàng.")
-                  : `❌ Lỗi: ${data?.message || "Không thể tải dữ liệu"}`}
+              ? "❌ Lỗi kết nối API. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau."
+              : data?.isSuccess
+              ? data?.message || "Danh sách các cuộc hẹn với khách hàng."
+              : `❌ Lỗi: ${data?.message || "Không thể tải dữ liệu"}`}
           </CardDescription>
           {data?.errors && data.errors.length > 0 && (
             <div className="text-sm text-red-600 mt-2">
@@ -315,10 +331,8 @@ export default function ConsultantAppointmentsPage() {
                   <TableHead>Kết thúc</TableHead>
                   <TableHead>Ngày</TableHead>
                   <TableHead>Thanh toán</TableHead>
-                  <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {isLoading && (
                   <TableRow>
@@ -335,9 +349,11 @@ export default function ConsultantAppointmentsPage() {
                   <TableRow>
                     <TableCell colSpan={6} className="py-10 text-center">
                       <div className="text-red-600">
-                        <div className="font-semibold mb-2">❌ Không thể tải dữ liệu</div>
+                        <div className="font-semibold mb-2">
+                          ❌ Không thể tải dữ liệu
+                        </div>
                         <div className="text-sm">
-                          Có thể do lỗi CORS hoặc server không phản hồi. 
+                          Có thể do lỗi CORS hoặc server không phản hồi.
                           <br />
                           Vui lòng kiểm tra console để xem chi tiết lỗi.
                         </div>
@@ -356,16 +372,14 @@ export default function ConsultantAppointmentsPage() {
 
                 {!isLoading &&
                   !isError &&
-                  items.map((ev) => (
-                    <AppointmentRow key={ev.id} ev={ev} />
-                  ))}
+                  items.map((ev) => <AppointmentRow key={ev.id} ev={ev} />)}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
 
-      {/* Create Schedule Dialog */}
+      {/* Dialog tạo lịch hẹn */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -374,7 +388,7 @@ export default function ConsultantAppointmentsPage() {
               Tạo một khung thời gian để khách hàng đặt lịch hẹn với bạn
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="startTime">Thời gian bắt đầu</Label>
@@ -411,9 +425,13 @@ export default function ConsultantAppointmentsPage() {
             {startTime && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm text-muted-foreground">
-                  Bắt đầu: {new Date(startTime).toLocaleString('vi-VN')}
+                  Bắt đầu: {new Date(startTime).toLocaleString("vi-VN")}
                   <br />
-                  Kết thúc: {new Date(new Date(startTime).getTime() + parseInt(duration) * 60 * 1000).toLocaleString('vi-VN')}
+                  Kết thúc:{" "}
+                  {new Date(
+                    new Date(startTime).getTime() +
+                      parseInt(duration) * 60 * 1000
+                  ).toLocaleString("vi-VN")}
                 </p>
               </div>
             )}
@@ -446,4 +464,3 @@ export default function ConsultantAppointmentsPage() {
     </div>
   );
 }
-

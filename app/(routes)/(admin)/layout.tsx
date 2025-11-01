@@ -1,7 +1,7 @@
 // app/(routes)/(consultant)/layout.tsx
 import Sidebar from "@/components/composite/admin-side-bar";
 
-export default function ConsultantLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex">
       <Sidebar />

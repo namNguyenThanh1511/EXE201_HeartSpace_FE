@@ -9,6 +9,7 @@ export interface AppointmentQueryParams {
   status?: string;
   clientId?: string;
   consultantId?: string;
+  [key: string]: string | number | undefined; // Add index signature
 }
 
 export interface AppointmentResponseItem {
@@ -75,16 +76,16 @@ export const appointmentService = {
   ): Promise<ApiResponse<AppointmentDetailResponse[]>> {
     console.log("[appointmentService] getAppointments called with params:", queryParams);
     console.log("[appointmentService] buildParams result:", buildParams(queryParams));
-    
+
     const response = await apiService.get<ApiResponse<AppointmentDetailResponse[]>>(
       "api/appointments",
       buildParams(queryParams)
     );
-    
+
     console.log("[appointmentService] Raw API response:", response);
 
     // Xử lý dữ liệu từ API response
-    const appointments = Array.isArray(response.data.data) 
+    const appointments = Array.isArray(response.data.data)
       ? response.data.data.map(normalizeAppointmentData)
       : [];
 

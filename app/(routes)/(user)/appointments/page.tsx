@@ -3,13 +3,7 @@
 import Link from "next/link";
 import * as React from "react";
 import { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,7 +32,6 @@ function toLocalHM(iso?: string) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-
 function getInitials(name?: string) {
   if (!name) return "U";
   const parts = name.trim().split(/\s+/);
@@ -46,20 +39,58 @@ function getInitials(name?: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function getConsultantDisplayInfo(consultantId?: string, consultant?: { fullName?: string; email?: string }): { name: string; subText?: string } {
+function getConsultantDisplayInfo(
+  consultantId?: string,
+  consultant?: { fullName?: string; email?: string }
+): { name: string; subText?: string } {
   // Try to get consultant name from the consultant object
   if (consultant?.fullName) {
     return {
       name: consultant.fullName,
-      subText: consultant.email || consultantId ? `ID: ${consultantId?.slice(0, 8)}...` : undefined
+      subText: consultant.email || consultantId ? `ID: ${consultantId?.slice(0, 8)}...` : undefined,
     };
   }
-  
+
   // Fallback to consultantId if no name available
   return {
     name: consultantId ? `Consultant ${consultantId.slice(0, 8)}...` : "Chưa có thông tin",
-    subText: consultantId ? `ID: ${consultantId}` : undefined
+    subText: consultantId ? `ID: ${consultantId}` : undefined,
   };
+}
+
+function formatAppointmentStatus(status?: string) {
+  switch (status) {
+    case "Pending":
+      return {
+        text: "Chờ xác nhận",
+        variant: "secondary" as const,
+      };
+    case "PendingPayment":
+      return {
+        text: "Chờ thanh toán",
+        variant: "outline" as const,
+      };
+    case "Paid":
+      return {
+        text: "Đã thanh toán",
+        variant: "default" as const,
+      };
+    case "Completed":
+      return {
+        text: "Hoàn thành",
+        variant: "default" as const,
+      };
+    case "Cancelled":
+      return {
+        text: "Đã hủy",
+        variant: "destructive" as const,
+      };
+    default:
+      return {
+        text: "Chưa xác định",
+        variant: "secondary" as const,
+      };
+  }
 }
 
 function formatPaymentStatus(paymentUrl?: string, paymentStatus?: string) {
@@ -67,34 +98,41 @@ function formatPaymentStatus(paymentUrl?: string, paymentStatus?: string) {
     return {
       type: "button" as const,
       text: "Thanh toán",
-      url: paymentUrl
+      url: paymentUrl,
     };
   }
-  
+
   if (paymentStatus) {
     return {
       type: "status" as const,
-      text: paymentStatus === "PendingPayment" ? "Chờ thanh toán" : 
-            paymentStatus === "Paid" ? "Đã thanh toán" : 
-            paymentStatus === "Failed" ? "Thanh toán thất bại" : 
-            paymentStatus,
-      variant: (paymentStatus === "Paid" ? "default" : 
-               paymentStatus === "PendingPayment" ? "secondary" : 
-               "destructive") as "default" | "secondary" | "destructive"
+      text:
+        paymentStatus === "PendingPayment"
+          ? "Chờ thanh toán"
+          : paymentStatus === "Paid"
+          ? "Đã thanh toán"
+          : paymentStatus === "Failed"
+          ? "Thanh toán thất bại"
+          : paymentStatus,
+      variant: (paymentStatus === "Paid"
+        ? "default"
+        : paymentStatus === "PendingPayment"
+        ? "secondary"
+        : "destructive") as "default" | "secondary" | "destructive",
     };
   }
-  
+
   return {
     type: "status" as const,
     text: "Chưa có thông tin",
-    variant: "secondary" as const
+    variant: "secondary" as const,
   };
 }
 
 // Component để render từng appointment row
 function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
   const paymentInfo = formatPaymentStatus(ev.paymentUrl, ev.paymentStatus);
-  
+  const statusInfo = formatAppointmentStatus(ev.status);
+
   // Fetch consultant info if not already available
   const { data: fetchedConsultant, isLoading: isLoadingConsultant } = useQuery({
     queryKey: ["consultant", ev.consultantId],
@@ -113,17 +151,17 @@ function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
   // Use consultant from appointment first, then from fetched data
   const consultant = ev.consultant || fetchedConsultant;
   const consultantInfo = getConsultantDisplayInfo(ev.consultantId, consultant || undefined);
-  
+
   // Endpoint /api/schedules/{scheduleId} trả về 404, vì vậy không fetch schedule nữa
   // Sử dụng schedule có sẵn trong appointment nếu có, nếu không thì dùng createdAt và updatedAt
   const schedule = ev.schedule;
-  
+
   // Xác định start và end time
   // Nếu có schedule trong appointment thì dùng schedule.startTime và schedule.endTime
   // Nếu không có thì fallback về createdAt và updatedAt
   const startTime = schedule?.startTime || ev.createdAt;
   const endTime = schedule?.endTime || ev.updatedAt;
-  
+
   // Ngày lấy từ date của startTime
   const appointmentDate = new Date(startTime);
 
@@ -132,10 +170,7 @@ function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
       <TableCell>
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarImage
-              src={consultant?.avatar || undefined}
-              alt={consultantInfo.name}
-            />
+            <AvatarImage src={consultant?.avatar || undefined} alt={consultantInfo.name} />
             <AvatarFallback>
               {isLoadingConsultant ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -145,52 +180,43 @@ function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
             </AvatarFallback>
           </Avatar>
           <div className="space-y-0.5">
-            <div className="font-medium leading-none">
-              {consultantInfo.name}
-            </div>
+            <div className="font-medium leading-none">{consultantInfo.name}</div>
             {consultantInfo.subText && (
-              <div className="text-xs text-muted-foreground">
-                {consultantInfo.subText}
-              </div>
+              <div className="text-xs text-muted-foreground">{consultantInfo.subText}</div>
             )}
           </div>
         </div>
       </TableCell>
 
-      <TableCell className="whitespace-nowrap">
-        {toLocalHM(startTime)}
-      </TableCell>
+      <TableCell className="whitespace-nowrap">{toLocalHM(startTime)}</TableCell>
+
+      <TableCell className="whitespace-nowrap">{toLocalHM(endTime)}</TableCell>
 
       <TableCell className="whitespace-nowrap">
-        {toLocalHM(endTime)}
+        {appointmentDate.toLocaleDateString("vi-VN")}
       </TableCell>
 
-      <TableCell className="whitespace-nowrap">
-        {appointmentDate.toLocaleDateString('vi-VN')}
+      <TableCell>
+        <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
       </TableCell>
 
       <TableCell>
         {paymentInfo.type === "button" ? (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             variant="outline"
-            onClick={() => window.open(paymentInfo.url, '_blank')}
+            onClick={() => window.open(paymentInfo.url, "_blank")}
           >
             {paymentInfo.text}
           </Button>
         ) : (
-          <Badge variant={paymentInfo.variant}>
-            {paymentInfo.text}
-          </Badge>
+          <Badge variant={paymentInfo.variant}>{paymentInfo.text}</Badge>
         )}
       </TableCell>
 
       <TableCell className="text-right">
         <div className="inline-flex items-center gap-3">
-          <Link
-            href={`/meeting/${ev.id}`}
-            className="text-sm text-primary hover:underline"
-          >
+          <Link href={`/meeting/${ev.id}`} className="text-sm text-primary hover:underline">
             Mở
           </Link>
           <Link
@@ -222,7 +248,12 @@ export default function AppointmentsPage() {
       const notes = ev.notes?.toLowerCase() || "";
       const paymentStatus = ev.paymentStatus?.toLowerCase() || "";
       const consultantId = ev.consultantId?.toLowerCase() || "";
-      return consultantName.includes(q) || notes.includes(q) || paymentStatus.includes(q) || consultantId.includes(q);
+      return (
+        consultantName.includes(q) ||
+        notes.includes(q) ||
+        paymentStatus.includes(q) ||
+        consultantId.includes(q)
+      );
     });
   }, [data?.appointments, query]);
 
@@ -231,9 +262,7 @@ export default function AppointmentsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Lịch đã đặt</h1>
-          <p className="text-sm text-muted-foreground">
-            Danh sách các cuộc hẹn của bạn
-          </p>
+          <p className="text-sm text-muted-foreground">Danh sách các cuộc hẹn của bạn</p>
         </div>
         <div className="flex items-center gap-3">
           <Input
@@ -256,15 +285,13 @@ export default function AppointmentsPage() {
             {isLoading
               ? "Đang tải dữ liệu lịch hẹn…"
               : isError
-                ? "❌ Lỗi kết nối API. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau."
-                : data?.isSuccess 
-                  ? (data?.message || "Bạn có thể mở phòng họp hoặc xem hồ sơ chuyên gia.")
-                  : `❌ Lỗi: ${data?.message || "Không thể tải dữ liệu"}`}
+              ? "❌ Lỗi kết nối API. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau."
+              : data?.isSuccess
+              ? data?.message || "Bạn có thể mở phòng họp hoặc xem hồ sơ chuyên gia."
+              : `❌ Lỗi: ${data?.message || "Không thể tải dữ liệu"}`}
           </CardDescription>
           {data?.errors && data.errors.length > 0 && (
-            <div className="text-sm text-red-600 mt-2">
-              Chi tiết lỗi: {data.errors.join(", ")}
-            </div>
+            <div className="text-sm text-red-600 mt-2">Chi tiết lỗi: {data.errors.join(", ")}</div>
           )}
         </CardHeader>
         <Separator />
@@ -277,6 +304,7 @@ export default function AppointmentsPage() {
                   <TableHead>Bắt đầu</TableHead>
                   <TableHead>Kết thúc</TableHead>
                   <TableHead>Ngày</TableHead>
+                  <TableHead>Trạng thái</TableHead>
                   <TableHead>Thanh toán</TableHead>
                   <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
@@ -285,7 +313,7 @@ export default function AppointmentsPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center">
+                    <TableCell colSpan={7} className="py-10 text-center">
                       <div className="inline-flex items-center gap-2 text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Đang tải dữ liệu…
@@ -296,11 +324,11 @@ export default function AppointmentsPage() {
 
                 {isError && !isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center">
+                    <TableCell colSpan={7} className="py-10 text-center">
                       <div className="text-red-600">
                         <div className="font-semibold mb-2">❌ Không thể tải dữ liệu</div>
                         <div className="text-sm">
-                          Có thể do lỗi CORS hoặc server không phản hồi. 
+                          Có thể do lỗi CORS hoặc server không phản hồi.
                           <br />
                           Vui lòng kiểm tra console để xem chi tiết lỗi.
                         </div>
@@ -311,7 +339,7 @@ export default function AppointmentsPage() {
 
                 {!isLoading && !isError && items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center">
+                    <TableCell colSpan={7} className="py-10 text-center">
                       Chưa có lịch hẹn nào.
                     </TableCell>
                   </TableRow>
@@ -319,9 +347,7 @@ export default function AppointmentsPage() {
 
                 {!isLoading &&
                   !isError &&
-                  items.map((ev) => (
-                    <AppointmentRow key={ev.id} ev={ev} />
-                  ))}
+                  items.map((ev) => <AppointmentRow key={ev.id} ev={ev} />)}
               </TableBody>
             </Table>
           </div>

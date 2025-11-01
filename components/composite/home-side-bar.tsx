@@ -17,6 +17,7 @@ import {
   X,
   LogOut,
   User,
+  Calendar,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,12 +38,13 @@ export default function Sidebar() {
 
   // 👉 Thêm field linkTo cho từng item
   const menuItems = [
-    { id: "search", label: "Search", icon: Search, linkTo: "/search" },
+    // { id: "search", label: "Search", icon: Search, linkTo: "/search" },
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
-    { id: "projects", label: "Projects", icon: FolderKanban, hasSubmenu: true },
+    // { id: "projects", label: "Projects", icon: FolderKanban, hasSubmenu: true },
     { id: "messages", label: "Messages", icon: MessageSquare, linkTo: "/messages" },
     { id: "consultants", label: "Consultants", icon: Users, linkTo: "/consultants" },
     { id: "favorites", label: "Favorites", icon: Star, linkTo: "/favorites" },
+    { id: "appointments", label: "Appointments", icon: Calendar, linkTo: "/appointments" },
   ];
 
   const bottomMenuItems = [

@@ -1,6 +1,7 @@
 // hooks/services/use-appointment-service.ts
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import {
@@ -8,13 +9,27 @@ import {
   type AppointmentQueryParams,
   type AppointmentDetailResponse,
 } from "@/services/api/appointment-service";
-import { scheduleService } from "@/services/api/schedule-service";
 
-/** Lấy userId từ nhiều claim phổ biến (kể cả .NET nameidentifier) */
+/** --- Helpers: Ưu tiên lấy userId từ store/context --- */
+function extractUserIdFromStoreContext(storeUser: unknown): string | undefined {
+  if (!storeUser) return undefined;
+  const u = storeUser as Record<string, unknown>;
+  // Các khả năng phổ biến khi app lưu user vào store
+  return (
+    (u.userId as string) ||
+    (u.id as string) ||
+    (u.profile as any)?.id ||
+    (u.context as any)?.userId ||
+    (u.account as any)?.id ||
+    undefined
+  );
+}
+
+/** Fallback: Lấy userId từ các claim (giữ nguyên cách cũ) */
 function extractUserIdFromClaims(user: unknown): string | undefined {
   if (!user) return undefined;
-
   const userObj = user as Record<string, unknown>;
+
   const directId =
     userObj.id ??
     userObj.userId ??
@@ -26,8 +41,11 @@ function extractUserIdFromClaims(user: unknown): string | undefined {
 
   if (directId) return String(directId);
 
-  const payload: Record<string, unknown> = (userObj.tokenPayload ?? userObj.decoded ?? userObj.profile) as Record<string, unknown> ?? {};
-  if (!payload) return undefined;
+  const payload: Record<string, unknown> =
+    ((userObj.tokenPayload ?? userObj.decoded ?? userObj.profile) as Record<
+      string,
+      unknown
+    >) ?? {};
 
   const nestedId =
     payload.id ??
@@ -50,18 +68,46 @@ function normalizeRole(role: unknown): "consultant" | "client" | "unknown" {
 
 /**
  * Hook: lấy danh sách lịch hẹn theo user hiện tại
+ * - Ưu tiên userId từ store/context; fallback claims; cuối cùng tới localStorage("lastUserId")
  * - Consultant → gắn consultantId, còn lại → clientId
  * - Chỉ gọi API khi đã có id
- * - Trả về { appointments, message, isSuccess }
  */
 export const useMyAppointments = (
   queryParams?: Omit<AppointmentQueryParams, "clientId" | "consultantId">
 ) => {
+  // Lấy user & role từ store (context) — KHÔNG phụ thuộc token
   const { user } = useAuthStore();
 
-  const roleNorm = normalizeRole((user as unknown as Record<string, unknown>)?.role);
-  const id = extractUserIdFromClaims(user);
+  // 1) Ưu tiên id từ store/context
+  const idFromStore = useMemo(() => extractUserIdFromStoreContext(user), [user]);
 
+  // 2) Fallback: id từ claims/token (cách cũ, phòng khi store không chứa thẳng id)
+  const idFromClaims = useMemo(() => extractUserIdFromClaims(user), [user]);
+
+  // 3) Fallback cuối: localStorage (để “nhớ” ngay sau khi thanh toán/logout)
+  const idFromStorage =
+    typeof window !== "undefined" ? window.localStorage.getItem("lastUserId") ?? undefined : undefined;
+
+  // id hiệu lực theo thứ tự ưu tiên
+  const id = idFromStore || idFromClaims || idFromStorage || undefined;
+
+  // Ghi nhớ id vào localStorage mỗi khi có id mới từ store/claims
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const next = idFromStore || idFromClaims;
+    if (next) {
+      try {
+        window.localStorage.setItem("lastUserId", String(next));
+      } catch {
+        /* ignore quota */
+      }
+    }
+  }, [idFromStore, idFromClaims]);
+
+  // Lấy role từ store/context (nếu không có coi là unknown)
+  const roleNorm = normalizeRole((user as any)?.role);
+
+  // Xây params gắn id theo role
   const effectiveParams: AppointmentQueryParams = {
     ...(queryParams || {}),
     ...(roleNorm === "consultant" && id ? { consultantId: id } : {}),
@@ -70,32 +116,24 @@ export const useMyAppointments = (
 
   return useQuery({
     queryKey: ["appointments", roleNorm, id ?? "-", effectiveParams],
-    enabled: !!id, // ✅ chỉ chạy khi có id
+    // Nếu muốn block khi role chưa xác định, đổi thành: !!id && roleNorm !== "unknown"
+    enabled: !!id,
     queryFn: async () => {
       try {
-        console.log("[useMyAppointments] Fetching appointments with params:", effectiveParams);
-        
-        // Thêm timeout cho request
+        console.log("[useMyAppointments] Params:", effectiveParams);
+
+        // Timeout bảo vệ UI
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000);
+          setTimeout(() => reject(new Error("Request timeout after 8 seconds")), 8000);
         });
-        
+
         const requestPromise = appointmentService.getAppointments(effectiveParams);
-        
-        const res = await Promise.race([requestPromise, timeoutPromise]) as any;
-        console.log("[useMyAppointments] API response:", res);
+        const res = (await Promise.race([requestPromise, timeoutPromise])) as any;
 
-        // Xử lý dữ liệu từ API response theo format mới
-        const appointments: AppointmentDetailResponse[] = Array.isArray(res.data) 
-          ? res.data 
-          : [];
+        const appointments: AppointmentDetailResponse[] = Array.isArray(res.data) ? res.data : [];
 
-        // Note: Schedule information is not being fetched separately 
-        // because the endpoint doesn't exist or returns 404
-        // The appointments should already include schedule info if the API provides it
-        
         return {
-          appointments: appointments,
+          appointments,
           message: res.message ?? "",
           isSuccess: res.isSuccess ?? true,
           status: "success",
@@ -104,48 +142,31 @@ export const useMyAppointments = (
           metaData: res.metaData,
         };
       } catch (error: unknown) {
-        console.error("[useMyAppointments] Error fetching appointments:", error);
-        
-        // Trả về mock data khi API lỗi
+        console.error("[useMyAppointments] Error:", error);
+
+        // Mock tối thiểu để UI không vỡ (cân nhắc bỏ nếu không cần)
+        const now = Date.now();
         const mockAppointments: AppointmentDetailResponse[] = [
           {
             id: "mock-1",
-            clientId: "client-001",
-            consultantId: id || "consultant-001",
+            clientId: roleNorm === "consultant" ? "client-001" : id || "client-001",
+            consultantId: roleNorm === "consultant" ? id || "consultant-001" : "consultant-001",
             scheduleId: "schedule-001",
             status: "confirmed",
             notes: "Tư vấn về sức khỏe tâm lý",
             paymentStatus: "paid",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(now).toISOString(),
+            updatedAt: new Date(now).toISOString(),
             schedule: {
               id: "schedule-001",
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-              isAvailable: false
-            }
+              startTime: new Date(now).toISOString(),
+              endTime: new Date(now + 30 * 60 * 1000).toISOString(),
+              isAvailable: false,
+            },
           },
-          {
-            id: "mock-2", 
-            clientId: "client-002",
-            consultantId: id || "consultant-001",
-            scheduleId: "schedule-002",
-            status: "pending",
-            notes: "Hỗ trợ stress công việc",
-            paymentStatus: "pending",
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            schedule: {
-              id: "schedule-002",
-              startTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              endTime: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
-              isAvailable: false
-            }
-          }
         ];
-        
+
         const errorMessage = error instanceof Error ? error.message : "API timeout";
-        
         return {
           appointments: mockAppointments,
           message: "API timeout - showing mock data",
@@ -158,8 +179,8 @@ export const useMyAppointments = (
       }
     },
     select: (d) => d,
-    staleTime: 5 * 60 * 1000, // Cache 5 phút
-    retry: 2, // Retry 2 lần
-    retryDelay: 1000, // Delay 1 giây giữa các lần retry
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    retryDelay: 1000,
   });
 };

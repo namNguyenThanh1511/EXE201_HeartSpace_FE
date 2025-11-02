@@ -121,13 +121,13 @@ export default function Sidebar() {
                     <item.icon className="w-5 h-5" />
                     {!collapsed && <span>{item.label}</span>}
                   </div>
-                  {!collapsed && item.hasSubmenu && (
+                  {/* {!collapsed && item.hasSubmenu && (
                     <ChevronDown
                       className={`w-4 h-4 transition-transform ${
                         projectsExpanded && item.id === "projects" ? "rotate-180" : ""
                       }`}
                     />
-                  )}
+                  )} */}
                 </div>
               );
 

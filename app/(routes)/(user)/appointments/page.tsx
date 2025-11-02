@@ -138,7 +138,6 @@ function ConsultantRow({ ev }: { ev: AppointmentDetailResponse }) {
   const clientName = detail?.client?.fullName || `Client ${ev.clientId?.slice(0, 8)}...`;
   const startTime = detail?.schedule?.startTime || ev.schedule?.startTime || ev.createdAt;
   const endTime = detail?.schedule?.endTime || ev.schedule?.endTime || ev.updatedAt;
-  const appointmentDate = new Date(startTime);
 
   const paymentStatusText = getPaymentStatusText(ev.paymentStatus);
   const paymentStatusVariant = getPaymentStatusVariant(ev.paymentStatus);
@@ -520,9 +519,9 @@ function formatAppointmentStatus(status?: string) {
 }
 
 /**
- * Logic hiển thị nút thanh toán (theo yêu cầu):
- * - Nếu paymentStatus = "Paid" => KHÔNG hiển thị nút (badge "Đã thanh toán")
- * - Các trạng thái khác => HIỂN THỊ NÚT "Thanh toán" (kể cả khi không có paymentUrl)
+ * Logic hiển thị nút thanh toán:
+ * - Nếu paymentStatus = "Paid" => badge "Đã thanh toán"
+ * - Ngược lại => nút "Thanh toán"/"Thanh toán ngay"
  */
 function formatPaymentStatus(paymentUrl?: string, paymentStatus?: string) {
   const status = paymentStatus?.toLowerCase();
@@ -541,14 +540,17 @@ function formatPaymentStatus(paymentUrl?: string, paymentStatus?: string) {
   return {
     type: "button" as const,
     text: buttonText,
-    url: paymentUrl || "", // có thể rỗng; UI sẽ disable để tránh mở link rỗng
+    url: paymentUrl || "",
   };
 }
 
+/* ⬇️ ClientRow đã sửa: lấy thời gian từ appointment-id giống consultant */
 function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
-  const paymentInfo = formatPaymentStatus(ev.paymentUrl, ev.paymentStatus);
-  const statusInfo = formatAppointmentStatus(ev.status);
+  // Lấy detail (ưu tiên schedule từ đây)
+  const { data: detailData, isLoading: detailLoading } = useAppointmentById(ev.id);
+  const detail = detailData?.appointment;
 
+  // Optionally fetch consultant nếu thiếu
   const { data: fetchedConsultant, isLoading: isLoadingConsultant } = useQuery({
     queryKey: ["consultant", ev.consultantId],
     enabled: !!ev.consultantId && !ev.consultant,
@@ -566,10 +568,12 @@ function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
   const consultant = ev.consultant || fetchedConsultant;
   const consultantInfo = getConsultantDisplayInfo(ev.consultantId, consultant || undefined);
 
-  const schedule = ev.schedule;
-  const startTime = schedule?.startTime || ev.createdAt;
-  const endTime = schedule?.endTime || ev.updatedAt;
-  const appointmentDate = new Date(startTime);
+  // ⬇️ Thời gian: ưu tiên từ DETAIL → fallback LIST
+  const startISO = detail?.schedule?.startTime || ev.schedule?.startTime || ev.createdAt;
+  const endISO   = detail?.schedule?.endTime   || ev.schedule?.endTime   || ev.updatedAt;
+
+  const statusInfo = formatAppointmentStatus(ev.status);
+  const paymentInfo = formatPaymentStatus(ev.paymentUrl, ev.paymentStatus);
 
   return (
     <TableRow key={ev.id}>
@@ -590,14 +594,15 @@ function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
         </div>
       </TableCell>
 
+      {/* Bắt đầu / Kết thúc / Ngày: giống consultant, có loading khi fetch detail */}
       <TableCell className="whitespace-nowrap">
-        <span suppressHydrationWarning>{toLocalHM(startTime)}</span>
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalHM(startISO)}</span>}
       </TableCell>
       <TableCell className="whitespace-nowrap">
-        <span suppressHydrationWarning>{toLocalHM(endTime)}</span>
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalHM(endISO)}</span>}
       </TableCell>
       <TableCell className="whitespace-nowrap">
-        <span suppressHydrationWarning>{toLocalDate(startTime)}</span>
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalDate(startISO)}</span>}
       </TableCell>
 
       <TableCell>
@@ -762,7 +767,6 @@ export default function UnifiedAppointmentsPage() {
   const mounted = useMounted();
   const { user } = useAuthStore();
 
-  // Tránh hydration mismatch: chỉ render sau khi client đã mount
   if (!mounted) {
     return <div className="p-6 text-sm text-muted-foreground">Đang tải lịch hẹn…</div>;
   }

@@ -44,11 +44,35 @@ import { scheduleService } from "@/services/api/schedule-service";
 import { consultantService } from "@/services/api/consultant-service";
 import { useAppointmentById } from "@/hooks/services/use-appointment-id";
 
-/* ====================== Utils chung ====================== */
+/* ====================== Helpers ====================== */
+function useMounted() {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  return mounted;
+}
+
+const TIMEZONE = "Asia/Ho_Chi_Minh";
+
 function toLocalHM(iso?: string) {
   if (!iso) return "-";
   const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: TIMEZONE,
+  }).format(d);
+}
+
+function toLocalDate(iso?: string) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: TIMEZONE,
+  }).format(d);
 }
 
 function getInitials(name?: string) {
@@ -136,13 +160,13 @@ function ConsultantRow({ ev }: { ev: AppointmentDetailResponse }) {
       </TableCell>
 
       <TableCell className="whitespace-nowrap">
-        {detailLoading ? "..." : toLocalHM(startTime)}
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalHM(startTime)}</span>}
       </TableCell>
       <TableCell className="whitespace-nowrap">
-        {detailLoading ? "..." : toLocalHM(endTime)}
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalHM(endTime)}</span>}
       </TableCell>
       <TableCell className="whitespace-nowrap">
-        {detailLoading ? "..." : appointmentDate.toLocaleDateString("vi-VN")}
+        {detailLoading ? "..." : <span suppressHydrationWarning>{toLocalDate(startTime)}</span>}
       </TableCell>
 
       <TableCell>
@@ -408,10 +432,23 @@ function ConsultantAppointmentsView() {
             {startTime && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm text-muted-foreground">
-                  Bắt đầu: {new Date(startTime).toLocaleString("vi-VN")}
+                  Bắt đầu:{" "}
+                  {
+                    new Intl.DateTimeFormat("vi-VN", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                      timeZone: TIMEZONE,
+                    }).format(new Date(startTime))
+                  }
                   <br />
                   Kết thúc:{" "}
-                  {new Date(new Date(startTime).getTime() + parseInt(duration) * 60 * 1000).toLocaleString("vi-VN")}
+                  {
+                    new Intl.DateTimeFormat("vi-VN", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                      timeZone: TIMEZONE,
+                    }).format(new Date(new Date(startTime).getTime() + parseInt(duration) * 60 * 1000))
+                  }
                 </p>
               </div>
             )}
@@ -451,7 +488,7 @@ function ConsultantAppointmentsView() {
 
 function getConsultantDisplayInfo(
   consultantId?: string,
-  consultant?: { fullName?: string; email?: string }
+  consultant?: { fullName?: string; email?: string; avatar?: string }
 ): { name: string; subText?: string } {
   if (consultant?.fullName) {
     return {
@@ -482,29 +519,30 @@ function formatAppointmentStatus(status?: string) {
   }
 }
 
+/**
+ * Logic hiển thị nút thanh toán (theo yêu cầu):
+ * - Nếu paymentStatus = "Paid" => KHÔNG hiển thị nút (badge "Đã thanh toán")
+ * - Các trạng thái khác => HIỂN THỊ NÚT "Thanh toán" (kể cả khi không có paymentUrl)
+ */
 function formatPaymentStatus(paymentUrl?: string, paymentStatus?: string) {
-  if (paymentUrl) {
-    return { type: "button" as const, text: "Thanh toán", url: paymentUrl };
-  }
-  if (paymentStatus) {
+  const status = paymentStatus?.toLowerCase();
+
+  if (status === "paid") {
     return {
       type: "status" as const,
-      text:
-        paymentStatus === "PendingPayment"
-          ? "Chờ thanh toán"
-          : paymentStatus === "Paid"
-          ? "Đã thanh toán"
-          : paymentStatus === "Failed"
-          ? "Thanh toán thất bại"
-          : paymentStatus,
-      variant: (paymentStatus === "Paid"
-        ? "default"
-        : paymentStatus === "PendingPayment"
-        ? "secondary"
-        : "destructive") as "default" | "secondary" | "destructive",
+      text: "Đã thanh toán",
+      variant: "default" as const,
     };
   }
-  return { type: "status" as const, text: "Chưa có thông tin", variant: "secondary" as const };
+
+  const buttonText =
+    status === "pendingpayment" || status === "pending" ? "Thanh toán ngay" : "Thanh toán";
+
+  return {
+    type: "button" as const,
+    text: buttonText,
+    url: paymentUrl || "", // có thể rỗng; UI sẽ disable để tránh mở link rỗng
+  };
 }
 
 function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
@@ -552,9 +590,15 @@ function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
         </div>
       </TableCell>
 
-      <TableCell className="whitespace-nowrap">{toLocalHM(startTime)}</TableCell>
-      <TableCell className="whitespace-nowrap">{toLocalHM(endTime)}</TableCell>
-      <TableCell className="whitespace-nowrap">{appointmentDate.toLocaleDateString("vi-VN")}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        <span suppressHydrationWarning>{toLocalHM(startTime)}</span>
+      </TableCell>
+      <TableCell className="whitespace-nowrap">
+        <span suppressHydrationWarning>{toLocalHM(endTime)}</span>
+      </TableCell>
+      <TableCell className="whitespace-nowrap">
+        <span suppressHydrationWarning>{toLocalDate(startTime)}</span>
+      </TableCell>
 
       <TableCell>
         <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
@@ -562,11 +606,17 @@ function ClientRow({ ev }: { ev: AppointmentDetailResponse }) {
 
       <TableCell>
         {paymentInfo.type === "button" ? (
-          <Button size="sm" variant="outline" onClick={() => window.open(paymentInfo.url, "_blank")}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => paymentInfo.url && window.open(paymentInfo.url, "_blank")}
+            disabled={!paymentInfo.url}
+            title={paymentInfo.url ? paymentInfo.text : "Chưa có link thanh toán"}
+          >
             {paymentInfo.text}
           </Button>
         ) : (
-          <Badge variant={paymentInfo.variant}>{paymentInfo.text}</Badge>
+          <Badge variant="default">Đã thanh toán</Badge>
         )}
       </TableCell>
 
@@ -709,8 +759,14 @@ function ClientAppointmentsView() {
 
 /* ====================== Trang hợp nhất ====================== */
 export default function UnifiedAppointmentsPage() {
+  const mounted = useMounted();
   const { user } = useAuthStore();
-  const role = normalizeRole((user as any)?.role);
 
+  // Tránh hydration mismatch: chỉ render sau khi client đã mount
+  if (!mounted) {
+    return <div className="p-6 text-sm text-muted-foreground">Đang tải lịch hẹn…</div>;
+  }
+
+  const role = normalizeRole((user as any)?.role);
   return role === "consultant" ? <ConsultantAppointmentsView /> : <ClientAppointmentsView />;
 }

@@ -16,10 +16,12 @@ import { toast } from "sonner";
 
 import { useConsultantAppointments, useUpdateAppointment } from "@/hooks/services/use-booking-service";
 import { useAuthStore } from "@/store/zustand/auth-store";
-import { AppointmentDetailResponse } from "@/services/api/booking-service";
+import type { AppointmentDetailResponse } from "@/services/api/booking-service";
 
-// ⬇️ dùng API chi tiết theo ID để lấy client + start/end/date chính xác
+// ✅ Dùng hook lấy chi tiết theo ID
 import { useAppointmentById } from "@/hooks/services/use-appointment-id";
+// ✅ Lấy đúng type chi tiết từ appointment-id, alias lại để không trùng tên
+import type { AppointmentDetailResponse as AppointmentIdDetail } from "@/services/api/appointment-id";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("vi-VN", {
@@ -102,15 +104,14 @@ function AppointmentRow({
   onReject: (r: AppointmentDetailResponse) => void;
   isMutating: boolean;
 }) {
-  // gọi API chi tiết theo id ⬇️
+  // gọi API chi tiết theo id
   const { data, isLoading: isLoadingDetail } = useAppointmentById(request?.id);
-  const detail = data?.appointment as AppointmentDetailResponse | undefined;
+  const detail = data?.appointment as AppointmentIdDetail | undefined;
 
-  // Lấy client từ API chi tiết; nếu chưa có thì fallback rỗng
-  const client = detail?.client;
-  const clientName = client?.fullName || "N/A";
-  const clientEmail = client?.email || "";
-  const clientAvatar = client?.avatar || "";
+  // Lấy client từ API chi tiết
+  const clientName = detail?.client?.fullName || "N/A";
+  const clientEmail = detail?.client?.email || "";
+  const clientAvatar = detail?.client?.avatar || "";
 
   // Lấy thời gian từ API chi tiết; nếu chưa về, fallback sang list
   const startISO = detail?.schedule?.startTime || request?.schedule?.startTime;
@@ -125,10 +126,10 @@ function AppointmentRow({
       ? `${startTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
       : "N/A";
 
-  // ⬇️ CỘT TRẠNG THÁI: dùng paymentStatus từ LIST
+  // Cột Trạng thái: dùng paymentStatus từ LIST
   const paymentStatus = request?.paymentStatus;
 
-  // Giữ nguyên điều kiện hiển thị nút theo request.status như cũ
+  // Nút thao tác vẫn dựa theo request.status như cũ
   const statusForButtons = request?.status;
 
   return (
@@ -137,7 +138,7 @@ function AppointmentRow({
       <TableCell>
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={clientAvatar} alt={clientName} />
+            <AvatarImage src={clientAvatar || undefined} alt={clientName} />
             <AvatarFallback>{getInitials(clientName)}</AvatarFallback>
           </Avatar>
           <div>
@@ -163,12 +164,12 @@ function AppointmentRow({
         </div>
       </TableCell>
 
-      {/* ⬇️ Trạng thái: HIỂN THỊ PAYMENT STATUS */}
+      {/* Trạng thái: PAYMENT STATUS */}
       <TableCell>
         <Badge variant={getPaymentBadgeVariant(paymentStatus)}>{getPaymentText(paymentStatus)}</Badge>
       </TableCell>
 
-      {/* Thao tác: giữ nguyên logic cũ (dựa theo request.status) */}
+      {/* Thao tác */}
       <TableCell className="text-right">
         <div className="flex items-center justify-end space-x-2">
           {statusForButtons === "Pending" && (
@@ -221,7 +222,7 @@ export default function ManageRequestPage() {
         clientId: `client-${i + 1}`,
         consultantId: user?.id || "test-consultant",
         scheduleId: `schedule-${i + 1}`,
-        status: "pending",
+        status: "Pending",
         paymentStatus: i % 4 === 0 ? "paid" : i % 4 === 1 ? "pending" : i % 4 === 2 ? "failed" : "refunded",
         notes: `Mock request ${i + 1}`,
         createdAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
@@ -247,7 +248,6 @@ export default function ManageRequestPage() {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
-      // Tìm kiếm giữ nguyên
       const clientName = request.consultant?.fullName || "";
       const clientEmail = request.consultant?.email || "";
       const service = "Tư vấn tâm lý";
@@ -258,7 +258,7 @@ export default function ManageRequestPage() {
         service.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // ⚠️ Giữ nguyên filter theo status cũ (theo yêu cầu chỉ đổi cột hiển thị)
+      // Giữ filter theo appointment.status (không dùng paymentStatus để lọc)
       const matchesStatus = statusFilter === "all" || request.status === statusFilter;
 
       return matchesSearch && matchesStatus;
@@ -278,10 +278,7 @@ export default function ManageRequestPage() {
     setCurrentPage(1);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
+  const handlePageChange = (page: number) => setCurrentPage(page);
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
@@ -342,7 +339,6 @@ export default function ManageRequestPage() {
 
   const stats = useMemo(() => {
     const total = filteredRequests.length;
-    // ⚠️ Giữ nguyên thống kê pending theo appointment.status (không đổi)
     const pending = filteredRequests.filter((r) => String(r.status ?? "").toLowerCase() === "pending").length;
     return { total, pending };
   }, [filteredRequests]);
@@ -359,7 +355,7 @@ export default function ManageRequestPage() {
         )}
       </div>
 
-      {/* Stats Cards (giữ nguyên) */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
@@ -396,7 +392,7 @@ export default function ManageRequestPage() {
           <CardDescription>Quản lý và xử lý các yêu cầu đặt lịch từ khách hàng</CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
-          {/* Filters (giữ nguyên) */}
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
@@ -482,7 +478,7 @@ export default function ManageRequestPage() {
             </Table>
           </div>
 
-          {/* Pagination (giữ nguyên) */}
+          {/* Pagination */}
           {totalItems > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-2 py-4 gap-4">
               <div className="text-sm text-muted-foreground">
@@ -505,7 +501,7 @@ export default function ManageRequestPage() {
         </CardContent>
       </Card>
 
-      {/* Request Details Dialog (giữ nguyên, vẫn đang hiển thị consultant như code gốc của bạn) */}
+      {/* Request Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -522,7 +518,7 @@ export default function ManageRequestPage() {
                 <div>
                   <Label className="text-sm font-medium">Trạng thái</Label>
                   <div className="mt-1">
-                    {/* Giữ nguyên: dialog vẫn dùng appointment.status như cũ */}
+                    {/* Dialog vẫn để theo appointment.status như cũ */}
                     <Badge variant="secondary">{String(selectedRequest.status || "Pending")}</Badge>
                   </div>
                 </div>
@@ -583,7 +579,7 @@ export default function ManageRequestPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Action Confirmation Dialog (giữ nguyên) */}
+      {/* Action Confirmation Dialog */}
       <Dialog open={isActionOpen} onOpenChange={setIsActionOpen}>
         <DialogContent>
           <DialogHeader>

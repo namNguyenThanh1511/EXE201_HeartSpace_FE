@@ -3,13 +3,7 @@
 import Link from "next/link";
 import * as React from "react";
 import { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,6 +32,8 @@ import {
 import { useMyAppointments } from "@/hooks/services/use-appointment-service";
 import type { AppointmentDetailResponse } from "@/services/api/appointment-service";
 import { scheduleService } from "@/services/api/schedule-service";
+import { useAuthStore } from "@/store/zustand/auth-store";
+import { useRouter } from "next/navigation";
 
 /* ====================== Utils ====================== */
 function toLocalHM(iso?: string) {
@@ -53,24 +49,21 @@ function getInitials(name?: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function getClientDisplayInfo(clientId?: string): { name: string; subText?: string } {
-  // Fallback to clientId if no name available
-  return {
-    name: clientId ? `Client ${clientId.slice(0, 8)}...` : "Chưa có thông tin",
-    subText: clientId ? `ID: ${clientId}` : undefined
-  };
-}
-
 function getPaymentStatusText(paymentStatus?: string) {
   if (!paymentStatus) return "Chưa có thông tin";
-  
+
   const status = paymentStatus.toLowerCase();
   switch (status) {
-    case "pendingpayment":
-    case "pending":
-      return "Chờ thanh toán";
+    case "notpaid":
+      return "Chưa thanh toán";
     case "paid":
       return "Đã thanh toán";
+    case "pendingpayment":
+      return "Chờ thanh toán";
+    case "refunded":
+      return "Đã hoàn tiền";
+    case "withdrawn":
+      return "Đã rút tiền";
     case "failed":
       return "Thanh toán thất bại";
     default:
@@ -78,16 +71,34 @@ function getPaymentStatusText(paymentStatus?: string) {
   }
 }
 
+/* ====================== Utils (Updated) ====================== */
+
+// Thêm hàm định dạng tiền tệ
+function formatCurrency(amount?: number) {
+  if (amount === undefined || amount === null) return "0 VNĐ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+// Cập nhật getPaymentStatusVariant để phù hợp với PaymentStatus enum
 function getPaymentStatusVariant(paymentStatus?: string) {
   if (!paymentStatus) return "secondary" as const;
-  
+
   const status = paymentStatus.toLowerCase();
   switch (status) {
+    case "notpaid":
+      return "secondary" as const;
     case "paid":
       return "default" as const;
     case "pendingpayment":
-    case "pending":
-      return "secondary" as const;
+      return "outline" as const; // Map "warning" to "outline"
+    case "refunded":
+      return "outline" as const;
+    case "withdrawn":
+      return "destructive" as const;
     case "failed":
       return "destructive" as const;
     default:
@@ -95,86 +106,155 @@ function getPaymentStatusVariant(paymentStatus?: string) {
   }
 }
 
+// Hàm mới cho AppointmentStatus
+function getAppointmentStatusDisplay(status?: string) {
+  if (!status) return { text: "Chưa Rõ", variant: "secondary" as const };
+  const lowerStatus = status.toLowerCase();
+
+  switch (lowerStatus) {
+    case "pending": // Client đặt -> chờ Consultant Confirm
+      return { text: "Chờ bạn xác nhận", variant: "secondary" as const };
+    case "pendingpayment": // Consultant Confirm -> chờ Client Payment
+      return { text: "Chờ thanh toán", variant: "outline" as const }; // Map "warning" to "outline"
+    case "paid": // Client đã TT -> sẵn sàng diễn ra
+      return { text: "Đã thanh toán", variant: "default" as const };
+    case "completed":
+      return { text: "Đã hoàn thành", variant: "default" as const }; // Map "success" to "default"
+    case "cancelled":
+      return { text: "Đã hủy", variant: "destructive" as const };
+    default:
+      return { text: status, variant: "secondary" as const };
+  }
+}
+
+// Hàm client info để lấy tên thật nếu có (sử dụng ev.client.fullName)
+function getClientDisplayInfo(client?: { id?: string; fullName?: string }): {
+  name: string;
+  subText?: string;
+} {
+  if (client?.fullName) {
+    return {
+      name: client.fullName,
+      subText: client.id ? `ID: ${client.id.slice(0, 8)}...` : undefined,
+    };
+  }
+  return {
+    name: client?.id ? `Client ${client.id.slice(0, 8)}...` : "Chưa có thông tin",
+    subText: client?.id ? `ID: ${client.id}` : undefined,
+  };
+}
+
 // Component để render từng appointment row
 function AppointmentRow({ ev }: { ev: AppointmentDetailResponse }) {
-  // Get client info
-  const clientInfo = getClientDisplayInfo(ev.clientId);
+  // --- LẤY DỮ LIỆU CẦN THIẾT ---
+  const clientInfo = getClientDisplayInfo(ev.client);
+
+  // Trạng thái Cuộc hẹn (Status)
+  const appointmentStatus = getAppointmentStatusDisplay(ev.status);
+
+  // Trạng thái Thanh toán (PaymentStatus)
   const paymentStatusText = getPaymentStatusText(ev.paymentStatus);
   const paymentStatusVariant = getPaymentStatusVariant(ev.paymentStatus);
-  
-  // Endpoint /api/schedules/{scheduleId} trả về 404, vì vậy không fetch schedule nữa
-  // Sử dụng schedule có sẵn trong appointment nếu có, nếu không thì dùng createdAt và updatedAt
+
+  // Schedule Info
   const schedule = ev.schedule;
-  
-  // Xác định start và end time
-  // Nếu có schedule trong appointment thì dùng schedule.startTime và schedule.endTime
-  // Nếu không có thì fallback về createdAt và updatedAt
   const startTime = schedule?.startTime || ev.createdAt;
   const endTime = schedule?.endTime || ev.updatedAt;
-  
+  const price = ev.amount || schedule?.price;
+
+  // Link họp
+  const meetingLink = ev.meetingLink;
+
+  // Lý do hủy
+  const cancellationReason = ev.reasonForCancellation;
+
   // Ngày lấy từ date của startTime
   const appointmentDate = new Date(startTime);
 
   return (
-    <TableRow key={ev.id}>
-      <TableCell>
+    <TableRow
+      key={ev.id}
+      className={ev.status === "Cancelled" ? "bg-red-50/50 hover:bg-red-50" : ""}
+    >
+      {/* 1. Khách hàng */}
+      <TableCell className="min-w-[180px]">
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>
-              {getInitials(clientInfo.name)}
-            </AvatarFallback>
+            <AvatarFallback>{getInitials(clientInfo.name)}</AvatarFallback>
           </Avatar>
           <div className="space-y-0.5">
-            <div className="font-medium leading-none">
-              {clientInfo.name}
+            <div className="font-medium leading-none">{clientInfo.name}</div>
+            <div className="text-xs text-muted-foreground">
+              {ev.client?.email || clientInfo.subText}
             </div>
-            {clientInfo.subText && (
-              <div className="text-xs text-muted-foreground">
-                {clientInfo.subText}
-              </div>
-            )}
           </div>
         </div>
       </TableCell>
 
+      {/* 2. Thời gian */}
       <TableCell className="whitespace-nowrap">
-        {toLocalHM(startTime)}
+        <div className="font-semibold">
+          {toLocalHM(startTime)} - {toLocalHM(endTime)}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {appointmentDate.toLocaleDateString("vi-VN")}
+        </div>
       </TableCell>
 
-      <TableCell className="whitespace-nowrap">
-        {toLocalHM(endTime)}
+      {/* 3. Giá */}
+      <TableCell className="text-sm font-medium whitespace-nowrap">
+        {formatCurrency(price)}
       </TableCell>
 
-      <TableCell className="whitespace-nowrap">
-        {appointmentDate.toLocaleDateString('vi-VN')}
-      </TableCell>
-
+      {/* 4. Trạng thái Cuộc hẹn */}
       <TableCell>
-        <Badge variant={paymentStatusVariant}>
-          {paymentStatusText}
-        </Badge>
+        <Badge variant={appointmentStatus.variant}>{appointmentStatus.text}</Badge>
       </TableCell>
 
-      <TableCell className="text-right">
-        <div className="inline-flex items-center gap-3">
+      {/* 5. Trạng thái Thanh toán */}
+      <TableCell>
+        <Badge variant={paymentStatusVariant}>{paymentStatusText}</Badge>
+      </TableCell>
+
+      {/* 6. Ghi chú & Hủy */}
+      <TableCell className="min-w-[200px] text-sm">
+        {cancellationReason ? (
+          <span className="text-red-500 italic">Hủy: {cancellationReason}</span>
+        ) : (
+          <span className="text-muted-foreground italic line-clamp-1">
+            {ev.notes || "Không có ghi chú"}
+          </span>
+        )}
+      </TableCell>
+
+      {/* 7. Hành động */}
+      <TableCell className="text-right whitespace-nowrap">
+        <div className="inline-flex flex-col gap-1 items-end">
+          {meetingLink && ev.status?.toLowerCase() === "paid" ? (
+            <Link
+              href={meetingLink}
+              target="_blank"
+              className="text-sm font-medium text-green-600 hover:underline"
+            >
+              Vào phòng họp
+            </Link>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {ev.status?.toLowerCase() === "paid" ? "Chưa có link" : "Chờ TT/XN"}
+            </span>
+          )}
+
           <Link
-            href={`/meeting/${ev.id}`}
-            className="text-sm text-primary hover:underline"
+            href={`/consultant/dashboard/appointments/${ev.id}`} // Sửa lại link chi tiết nếu cần
+            className="text-xs text-primary/80 hover:underline"
           >
-            Mở
-          </Link>
-          <Link
-            href={`/user/consultants/${ev.consultant?.id || ev.consultantId}`}
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            Chi tiết
+            Xem chi tiết
           </Link>
         </div>
       </TableCell>
     </TableRow>
   );
 }
-
 /* ====================== Page ====================== */
 export default function ConsultantAppointmentsPage() {
   const [query, setQuery] = useState("");
@@ -182,8 +262,14 @@ export default function ConsultantAppointmentsPage() {
   const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState<"30" | "60">("30");
   const [creating, setCreating] = useState(false);
-  
+  const router = useRouter();
+  const { user } = useAuthStore();
+  if (user?.role.toLowerCase() !== "consultant") {
+    router.replace("/");
+  }
+
   const { data, isLoading, isError, refetch } = useMyAppointments({ pageNumber: 1, pageSize: 200 });
+  const appointments = data?.data || [];
 
   const handleCreateSchedule = async () => {
     if (!startTime) {
@@ -213,40 +299,12 @@ export default function ConsultantAppointmentsPage() {
     }
   };
 
-  const handleQuickCreate = (hours: number) => {
-    const now = new Date();
-    now.setHours(hours, 0, 0, 0);
-    if (now < new Date()) {
-      now.setDate(now.getDate() + 1);
-    }
-    const dateStr = now.toISOString().slice(0, 16);
-    setStartTime(dateStr);
-    setIsCreateDialogOpen(true);
-  };
-
-  // Search theo tên client/ghi chú/trạng thái thanh toán
-  const items = useMemo(() => {
-    const rawItems = (data?.appointments || []) as AppointmentDetailResponse[];
-    if (!query.trim()) return rawItems;
-    const q = query.toLowerCase();
-    return rawItems.filter((ev) => {
-      const clientInfo = getClientDisplayInfo(ev.clientId);
-      const clientName = clientInfo.name.toLowerCase();
-      const notes = ev.notes?.toLowerCase() || "";
-      const paymentStatus = ev.paymentStatus?.toLowerCase() || "";
-      const clientId = ev.clientId?.toLowerCase() || "";
-      return clientName.includes(q) || notes.includes(q) || paymentStatus.includes(q) || clientId.includes(q);
-    });
-  }, [data?.appointments, query]);
-
   return (
     <div className="container mx-auto max-w-7xl py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Lịch đã đặt</h1>
-          <p className="text-sm text-muted-foreground">
-            Danh sách các cuộc hẹn của bạn
-          </p>
+          <p className="text-sm text-muted-foreground">Danh sách các cuộc hẹn của bạn</p>
         </div>
         <div className="flex items-center gap-3">
           <Input
@@ -259,50 +317,12 @@ export default function ConsultantAppointmentsPage() {
             <Filter className="h-4 w-4 mr-2" />
             Bộ lọc
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tạo lịch hẹn
-          </Button>
         </div>
-      </div>
-
-      {/* Quick action buttons */}
-      <div className="mb-6 flex gap-2">
-        <Button variant="outline" onClick={() => handleQuickCreate(9)} className="flex-1">
-          <Clock className="h-4 w-4 mr-2" />
-          Sáng 9h - 30p
-        </Button>
-        <Button variant="outline" onClick={() => { setDuration("60"); handleQuickCreate(9); }} className="flex-1">
-          <Clock className="h-4 w-4 mr-2" />
-          Sáng 9h - 60p
-        </Button>
-        <Button variant="outline" onClick={() => handleQuickCreate(14)} className="flex-1">
-          <Clock className="h-4 w-4 mr-2" />
-          Chiều 14h - 30p
-        </Button>
-        <Button variant="outline" onClick={() => { setDuration("60"); handleQuickCreate(14); }} className="flex-1">
-          <Clock className="h-4 w-4 mr-2" />
-          Chiều 14h - 60p
-        </Button>
       </div>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Tổng số: {items.length}</CardTitle>
-          <CardDescription>
-            {isLoading
-              ? "Đang tải dữ liệu lịch hẹn…"
-              : isError
-                ? "❌ Lỗi kết nối API. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau."
-                : data?.isSuccess 
-                  ? (data?.message || "Danh sách các cuộc hẹn với khách hàng.")
-                  : `❌ Lỗi: ${data?.message || "Không thể tải dữ liệu"}`}
-          </CardDescription>
-          {data?.errors && data.errors.length > 0 && (
-            <div className="text-sm text-red-600 mt-2">
-              Chi tiết lỗi: {data.errors.join(", ")}
-            </div>
-          )}
+          <CardTitle className="text-base">Tổng số: {appointments.length}</CardTitle>
         </CardHeader>
         <Separator />
         <CardContent className="pt-4">
@@ -310,12 +330,11 @@ export default function ConsultantAppointmentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tên khách hàng</TableHead>
-                  <TableHead>Bắt đầu</TableHead>
-                  <TableHead>Kết thúc</TableHead>
-                  <TableHead>Ngày</TableHead>
-                  <TableHead>Thanh toán</TableHead>
-                  <TableHead className="text-right">Hành động</TableHead>
+                  <TableHead className="min-w-[180px]">Khách hàng</TableHead>
+                  <TableHead>Thời gian</TableHead> <TableHead>Giá</TableHead>
+                  <TableHead>Trạng thái hẹn</TableHead> <TableHead>Thanh toán</TableHead>{" "}
+                  <TableHead className="min-w-[200px]">Ghi chú/Hủy</TableHead>{" "}
+                  <TableHead className="text-right">Hành động</TableHead>{" "}
                 </TableRow>
               </TableHeader>
 
@@ -337,7 +356,7 @@ export default function ConsultantAppointmentsPage() {
                       <div className="text-red-600">
                         <div className="font-semibold mb-2">❌ Không thể tải dữ liệu</div>
                         <div className="text-sm">
-                          Có thể do lỗi CORS hoặc server không phản hồi. 
+                          Có thể do lỗi CORS hoặc server không phản hồi.
                           <br />
                           Vui lòng kiểm tra console để xem chi tiết lỗi.
                         </div>
@@ -346,7 +365,7 @@ export default function ConsultantAppointmentsPage() {
                   </TableRow>
                 )}
 
-                {!isLoading && !isError && items.length === 0 && (
+                {!isLoading && !isError && appointments.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-10 text-center">
                       Chưa có lịch hẹn nào.
@@ -356,9 +375,7 @@ export default function ConsultantAppointmentsPage() {
 
                 {!isLoading &&
                   !isError &&
-                  items.map((ev) => (
-                    <AppointmentRow key={ev.id} ev={ev} />
-                  ))}
+                  appointments.map((ev) => <AppointmentRow key={ev.id} ev={ev} />)}
               </TableBody>
             </Table>
           </div>
@@ -374,7 +391,7 @@ export default function ConsultantAppointmentsPage() {
               Tạo một khung thời gian để khách hàng đặt lịch hẹn với bạn
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="startTime">Thời gian bắt đầu</Label>
@@ -411,9 +428,12 @@ export default function ConsultantAppointmentsPage() {
             {startTime && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm text-muted-foreground">
-                  Bắt đầu: {new Date(startTime).toLocaleString('vi-VN')}
+                  Bắt đầu: {new Date(startTime).toLocaleString("vi-VN")}
                   <br />
-                  Kết thúc: {new Date(new Date(startTime).getTime() + parseInt(duration) * 60 * 1000).toLocaleString('vi-VN')}
+                  Kết thúc:{" "}
+                  {new Date(
+                    new Date(startTime).getTime() + parseInt(duration) * 60 * 1000
+                  ).toLocaleString("vi-VN")}
                 </p>
               </div>
             )}
@@ -446,4 +466,3 @@ export default function ConsultantAppointmentsPage() {
     </div>
   );
 }
-

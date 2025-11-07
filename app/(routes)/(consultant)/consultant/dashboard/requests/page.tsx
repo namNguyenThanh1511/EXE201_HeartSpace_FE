@@ -2,22 +2,51 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Calendar, Clock, CheckCircle, XCircle, Eye, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
-import { useConsultantAppointments, useUpdateAppointment } from "@/hooks/services/use-booking-service";
+import {
+  useConsultantAppointments,
+  useUpdateAppointment,
+} from "@/hooks/services/use-booking-service";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { AppointmentDetailResponse } from "@/services/api/booking-service";
-
-
-
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("vi-VN", {
@@ -29,10 +58,13 @@ function formatDateTime(iso: string) {
   });
 }
 
-function normalizeStatus(status: string): "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled" {
+function normalizeStatus(
+  status: string
+): "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled" {
   const s = (status || "").toLowerCase();
   if (s === "pending") return "Pending";
-  if (s === "approved" || s === "approve" || s === "confirm" || s === "confirmed") return "Approved";
+  if (s === "approved" || s === "approve" || s === "confirm" || s === "confirmed")
+    return "Approved";
   if (s === "rejected" || s === "reject") return "Rejected";
   if (s === "completed" || s === "complete") return "Completed";
   if (s === "cancelled" || s === "canceled" || s === "cancel") return "Cancelled";
@@ -81,54 +113,58 @@ export default function ManageRequestPage() {
   const [isActionOpen, setIsActionOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [responseNotes, setResponseNotes] = useState("");
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  
+
   const { user } = useAuthStore();
-  
+
   // API hooks
-  const { data: appointmentsData, isLoading, error } = useConsultantAppointments({
+  const {
+    data: appointmentsData,
+    isLoading,
+    error,
+  } = useConsultantAppointments({
     consultantId: user?.id,
     pageNumber: currentPage,
     pageSize: pageSize,
   });
-  
+
   const updateAppointmentMutation = useUpdateAppointment();
-  
+
   const requests = useMemo(() => {
     const apiRequests = appointmentsData?.appointments || [];
-    
+
     // Add mock data for testing pagination if needed
-    if (apiRequests.length < 10) {
-      const mockRequests = Array.from({ length: 10 - apiRequests.length }, (_, i) => ({
-        id: `mock-${i + 1}`,
-        clientId: `client-${i + 1}`,
-        consultantId: user?.id || "test-consultant",
-        scheduleId: `schedule-${i + 1}`,
-        status: "pending",
-        notes: `Mock request ${i + 1}`,
-        createdAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
-        consultant: {
-          id: `consultant-${i + 1}`,
-          fullName: `Mock Consultant ${i + 1}`,
-          email: `mock${i + 1}@example.com`,
-          phoneNumber: `+123456789${i}`,
-          avatar: null,
-        },
-        schedule: {
-          id: `schedule-${i + 1}`,
-          startTime: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + (i + 1) * 60 * 60 * 1000).toISOString(),
-          isAvailable: false
-        }
-      }));
-      
-      return [...apiRequests, ...mockRequests];
-    }
-    
+    // if (apiRequests.length < 10) {
+    //   const mockRequests = Array.from({ length: 10 - apiRequests.length }, (_, i) => ({
+    //     id: `mock-${i + 1}`,
+    //     clientId: `client-${i + 1}`,
+    //     consultantId: user?.id || "test-consultant",
+    //     scheduleId: `schedule-${i + 1}`,
+    //     status: "pending",
+    //     notes: `Mock request ${i + 1}`,
+    //     createdAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+    //     updatedAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+    //     consultant: {
+    //       id: `consultant-${i + 1}`,
+    //       fullName: `Mock Consultant ${i + 1}`,
+    //       email: `mock${i + 1}@example.com`,
+    //       phoneNumber: `+123456789${i}`,
+    //       avatar: null,
+    //     },
+    //     schedule: {
+    //       id: `schedule-${i + 1}`,
+    //       startTime: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
+    //       endTime: new Date(Date.now() + (i + 1) * 60 * 60 * 1000).toISOString(),
+    //       isAvailable: false
+    //     }
+    //   }));
+
+    //   return [...apiRequests, ...mockRequests];
+    // }
+
     return apiRequests;
   }, [appointmentsData?.appointments, user?.id]);
 
@@ -137,15 +173,15 @@ export default function ManageRequestPage() {
       const clientName = request.consultant?.fullName || "";
       const clientEmail = request.consultant?.email || "";
       const service = "Tư vấn tâm lý"; // Default service name
-      
-      const matchesSearch = 
+
+      const matchesSearch =
         clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         clientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.id.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || request.status === statusFilter;
-      
+
       return matchesSearch && matchesStatus;
     });
   }, [requests, searchQuery, statusFilter]);
@@ -166,7 +202,7 @@ export default function ManageRequestPage() {
     startIndex,
     endIndex,
     paginatedRequestsLength: paginatedRequests.length,
-    filteredRequestsLength: filteredRequests.length
+    filteredRequestsLength: filteredRequests.length,
   });
 
   // Reset to page 1 when filters change
@@ -230,7 +266,10 @@ export default function ManageRequestPage() {
           : { for: "ConfirmAppointment" };
 
         if (process.env.NODE_ENV === "development") {
-          console.debug("[ManageRequest] Approve payload:", { id: selectedRequest.id, approvePayload });
+          console.debug("[ManageRequest] Approve payload:", {
+            id: selectedRequest.id,
+            approvePayload,
+          });
         }
 
         const res = await updateAppointmentMutation.mutateAsync({
@@ -243,14 +282,23 @@ export default function ManageRequestPage() {
         }
       } else {
         // Reject flow: try a payload shape the backend may accept
-        const rejectPayload = { for: "RejectAppointment", notes: trimmedNotes } as Record<string, unknown>;
+        const rejectPayload = { for: "RejectAppointment", notes: trimmedNotes } as Record<
+          string,
+          unknown
+        >;
 
         if (process.env.NODE_ENV === "development") {
-          console.debug("[ManageRequest] Reject payload:", { id: selectedRequest.id, rejectPayload });
+          console.debug("[ManageRequest] Reject payload:", {
+            id: selectedRequest.id,
+            rejectPayload,
+          });
         }
 
         try {
-          const res = await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: rejectPayload });
+          const res = await updateAppointmentMutation.mutateAsync({
+            id: selectedRequest.id,
+            payload: rejectPayload,
+          });
           if (process.env.NODE_ENV === "development") {
             console.debug("[ManageRequest] Reject response (primary):", res);
           }
@@ -262,11 +310,20 @@ export default function ManageRequestPage() {
           const e = err as { status?: number; message?: string };
           // If validation error, try an alternate payload shape
           if (e?.status === 400) {
-            const altPayload = { for: "rejectAppointment", reason: trimmedNotes } as Record<string, unknown>;
+            const altPayload = { for: "rejectAppointment", reason: trimmedNotes } as Record<
+              string,
+              unknown
+            >;
             if (process.env.NODE_ENV === "development") {
-              console.debug("[ManageRequest] Retrying reject with alt payload:", { id: selectedRequest.id, altPayload });
+              console.debug("[ManageRequest] Retrying reject with alt payload:", {
+                id: selectedRequest.id,
+                altPayload,
+              });
             }
-            const res2 = await updateAppointmentMutation.mutateAsync({ id: selectedRequest.id, payload: altPayload });
+            const res2 = await updateAppointmentMutation.mutateAsync({
+              id: selectedRequest.id,
+              payload: altPayload,
+            });
             if (process.env.NODE_ENV === "development") {
               console.debug("[ManageRequest] Reject response (fallback):", res2);
             }
@@ -285,14 +342,14 @@ export default function ManageRequestPage() {
         console.debug("[ManageRequest] updateAppointmentMutation failed", finalErr);
       }
       console.error("[ManageRequest] update error:", finalErr);
-      toast.error('Không thể cập nhật trạng thái');
+      toast.error("Không thể cập nhật trạng thái");
     }
   };
 
   const stats = useMemo(() => {
     const total = filteredRequests.length;
-    const pending = filteredRequests.filter(r => normalizeStatus(r.status) === "Pending").length;
-    
+    const pending = filteredRequests.filter((r) => normalizeStatus(r.status) === "Pending").length;
+
     return { total, pending };
   }, [filteredRequests]);
 
@@ -327,7 +384,7 @@ export default function ManageRequestPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -346,9 +403,7 @@ export default function ManageRequestPage() {
       <Card>
         <CardHeader className="border-b">
           <CardTitle>Danh sách yêu cầu đặt lịch</CardTitle>
-          <CardDescription>
-            Quản lý và xử lý các yêu cầu đặt lịch từ khách hàng
-          </CardDescription>
+          <CardDescription>Quản lý và xử lý các yêu cầu đặt lịch từ khách hàng</CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           {/* Filters */}
@@ -361,7 +416,10 @@ export default function ManageRequestPage() {
                 className="max-w-sm"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(value) => handleFilterChange(searchQuery, value)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => handleFilterChange(searchQuery, value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Lọc theo trạng thái" />
               </SelectTrigger>
@@ -374,7 +432,10 @@ export default function ManageRequestPage() {
                 <SelectItem value="Cancelled">Đã hủy</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(Number(value))}>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => handlePageSizeChange(Number(value))}
+            >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Số dòng" />
               </SelectTrigger>
@@ -426,19 +487,34 @@ export default function ManageRequestPage() {
                   </TableRow>
                 ) : (
                   paginatedRequests.map((request) => {
-                    const startTime = request.schedule?.startTime ? new Date(request.schedule.startTime) : null;
-                    const endTime = request.schedule?.endTime ? new Date(request.schedule.endTime) : null;
+                    const startTime = request.schedule?.startTime
+                      ? new Date(request.schedule.startTime)
+                      : null;
+                    const endTime = request.schedule?.endTime
+                      ? new Date(request.schedule.endTime)
+                      : null;
                     const dateStr = startTime ? startTime.toLocaleDateString("vi-VN") : "N/A";
-                    const timeStr = startTime && endTime 
-                      ? `${startTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
-                      : "N/A";
+                    const timeStr =
+                      startTime && endTime
+                        ? `${startTime.toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })} - ${endTime.toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`
+                        : "N/A";
 
                     return (
                       <TableRow key={request.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{request.consultant?.fullName || "N/A"}</div>
-                            <div className="text-sm text-muted-foreground">{request.consultant?.email || "N/A"}</div>
+                            <div className="font-medium">
+                              {request.consultant?.fullName || "N/A"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {request.consultant?.email || "N/A"}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -510,9 +586,10 @@ export default function ManageRequestPage() {
           {totalItems > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-2 py-4 gap-4">
               <div className="text-sm text-muted-foreground">
-                Hiển thị {startIndex + 1} đến {Math.min(endIndex, totalItems)} trong tổng số {totalItems} yêu cầu
+                Hiển thị {startIndex + 1} đến {Math.min(endIndex, totalItems)} trong tổng số{" "}
+                {totalItems} yêu cầu
               </div>
-              
+
               <div className="flex items-center justify-center space-x-4">
                 <Button
                   variant="outline"
@@ -527,7 +604,7 @@ export default function ManageRequestPage() {
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Trước
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -576,18 +653,24 @@ export default function ManageRequestPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Tên khách hàng</Label>
-                  <p className="text-sm text-muted-foreground">{selectedRequest.consultant?.fullName || "N/A"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedRequest.consultant?.fullName || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Email</Label>
-                  <p className="text-sm text-muted-foreground">{selectedRequest.consultant?.email || "N/A"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedRequest.consultant?.email || "N/A"}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Số điện thoại</Label>
-                  <p className="text-sm text-muted-foreground">{selectedRequest.consultant?.phoneNumber || "N/A"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedRequest.consultant?.phoneNumber || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Dịch vụ</Label>
@@ -599,19 +682,23 @@ export default function ManageRequestPage() {
                 <div>
                   <Label className="text-sm font-medium">Ngày hẹn</Label>
                   <p className="text-sm text-muted-foreground">
-                    {selectedRequest.schedule?.startTime 
+                    {selectedRequest.schedule?.startTime
                       ? new Date(selectedRequest.schedule.startTime).toLocaleDateString("vi-VN")
-                      : "N/A"
-                    }
+                      : "N/A"}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Thời gian</Label>
                   <p className="text-sm text-muted-foreground">
                     {selectedRequest.schedule?.startTime && selectedRequest.schedule?.endTime
-                      ? `${new Date(selectedRequest.schedule.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} - ${new Date(selectedRequest.schedule.endTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
-                      : "N/A"
-                    }
+                      ? `${new Date(selectedRequest.schedule.startTime).toLocaleTimeString(
+                          "vi-VN",
+                          { hour: "2-digit", minute: "2-digit" }
+                        )} - ${new Date(selectedRequest.schedule.endTime).toLocaleTimeString(
+                          "vi-VN",
+                          { hour: "2-digit", minute: "2-digit" }
+                        )}`
+                      : "N/A"}
                   </p>
                 </div>
               </div>
@@ -625,7 +712,9 @@ export default function ManageRequestPage() {
 
               <div>
                 <Label className="text-sm font-medium">Ngày tạo yêu cầu</Label>
-                <p className="text-sm text-muted-foreground">{formatDateTime(selectedRequest.createdAt)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatDateTime(selectedRequest.createdAt)}
+                </p>
               </div>
             </div>
           )}
@@ -640,40 +729,51 @@ export default function ManageRequestPage() {
               {actionType === "approve" ? "Duyệt yêu cầu đặt lịch" : "Từ chối yêu cầu đặt lịch"}
             </DialogTitle>
             <DialogDescription>
-              {actionType === "approve" 
-                ? "Bạn có chắc chắn muốn duyệt yêu cầu đặt lịch này không?" 
-                : "Bạn có chắc chắn muốn từ chối yêu cầu đặt lịch này không?"
-              }
+              {actionType === "approve"
+                ? "Bạn có chắc chắn muốn duyệt yêu cầu đặt lịch này không?"
+                : "Bạn có chắc chắn muốn từ chối yêu cầu đặt lịch này không?"}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {selectedRequest && (
               <div className="p-4 bg-muted rounded-lg">
                 <p className="font-medium">{selectedRequest.consultant?.fullName || "N/A"}</p>
                 <p className="text-sm text-muted-foreground">Tư vấn tâm lý</p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedRequest.schedule?.startTime 
-                    ? `${new Date(selectedRequest.schedule.startTime).toLocaleDateString("vi-VN")} - ${new Date(selectedRequest.schedule.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
-                    : "N/A"
-                  }
+                  {selectedRequest.schedule?.startTime
+                    ? `${new Date(selectedRequest.schedule.startTime).toLocaleDateString(
+                        "vi-VN"
+                      )} - ${new Date(selectedRequest.schedule.startTime).toLocaleTimeString(
+                        "vi-VN",
+                        { hour: "2-digit", minute: "2-digit" }
+                      )}`
+                    : "N/A"}
                 </p>
               </div>
             )}
 
             <div>
               <Label htmlFor="response-notes">
-                {actionType === "reject" ? "Lý do từ chối (tối thiểu 5 ký tự)" : "Ghi chú phản hồi (tùy chọn)"}
+                {actionType === "reject"
+                  ? "Lý do từ chối (tối thiểu 5 ký tự)"
+                  : "Ghi chú phản hồi (tùy chọn)"}
               </Label>
               <Textarea
                 id="response-notes"
-                placeholder={actionType === "reject" ? "Nhập lý do từ chối..." : "Nhập ghi chú phản hồi cho khách hàng..."}
+                placeholder={
+                  actionType === "reject"
+                    ? "Nhập lý do từ chối..."
+                    : "Nhập ghi chú phản hồi cho khách hàng..."
+                }
                 value={responseNotes}
                 onChange={(e) => setResponseNotes(e.target.value)}
                 className="mt-1"
               />
               {actionType === "reject" && (
-                <p className="text-xs text-muted-foreground mt-1">Cần nhập ít nhất 5 ký tự để từ chối.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cần nhập ít nhất 5 ký tự để từ chối.
+                </p>
               )}
             </div>
           </div>
@@ -685,16 +785,25 @@ export default function ManageRequestPage() {
             <Button
               variant={actionType === "approve" ? "default" : "destructive"}
               onClick={handleConfirmAction}
-              disabled={updateAppointmentMutation.isPending || (actionType === "reject" && (responseNotes?.trim().length || 0) < 5)}
-              title={actionType === "reject" && (responseNotes?.trim().length || 0) < 5 ? "Nhập lý do tối thiểu 5 ký tự để từ chối" : undefined}
+              disabled={
+                updateAppointmentMutation.isPending ||
+                (actionType === "reject" && (responseNotes?.trim().length || 0) < 5)
+              }
+              title={
+                actionType === "reject" && (responseNotes?.trim().length || 0) < 5
+                  ? "Nhập lý do tối thiểu 5 ký tự để từ chối"
+                  : undefined
+              }
             >
               {updateAppointmentMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Đang xử lý...
                 </>
+              ) : actionType === "approve" ? (
+                "Duyệt"
               ) : (
-                actionType === "approve" ? "Duyệt" : "Từ chối"
+                "Từ chối"
               )}
             </Button>
           </DialogFooter>
@@ -703,4 +812,3 @@ export default function ManageRequestPage() {
     </div>
   );
 }
-

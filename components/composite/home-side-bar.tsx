@@ -243,11 +243,25 @@ export default function Sidebar() {
                   <User className="w-4 h-4 mr-2" /> Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-red-600 focus:text-red-600 cursor-pointer"
-              >
-                <LogOut className="w-4 h-4 mr-2" /> Logout
+              {user?.role.toLowerCase() === "consultant" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/consultant/dashboard" className="cursor-pointer flex items-center">
+                    <Settings className="w-4 h-4 mr-2" /> Dashboard
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="">
+                {user ? (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2 text-red-600 focus:text-red-600 cursor-pointer" />
+                    <span>Logout</span>
+                  </>
+                ) : (
+                  <Link href="/login" className="flex items-center">
+                    Login
+                  </Link>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

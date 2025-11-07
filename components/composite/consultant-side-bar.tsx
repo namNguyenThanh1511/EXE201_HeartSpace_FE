@@ -37,11 +37,21 @@ export default function ConsultantSidebar() {
 
   // 👉 Thêm field linkTo cho từng item
   const menuItems = [
-    { id: "search", label: "Search", icon: Search, linkTo: "/search" },
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
-    { id: "appointments", label: "Appointments", icon: Calendar, hasSubmenu: true },
-    { id: "messages", label: "Messages", icon: MessageSquare, linkTo: "/messages" },
-
+    {
+      id: "appointments",
+      label: "Appointments",
+      icon: Calendar,
+      linkTo: "/consultant/dashboard/appointments",
+    },
+    { id: "bookings", label: "Bookings", icon: Calendar, linkTo: "/consultant/dashboard/bookings" },
+    {
+      id: "requests",
+      label: "Requests",
+      icon: MessageSquare,
+      linkTo: "/consultant/dashboard/requests",
+    },
+    { id: "schedules", label: "Schedules", icon: Users, linkTo: "/consultant/dashboard/schedules" },
   ];
 
   const bottomMenuItems = [
@@ -118,13 +128,6 @@ export default function ConsultantSidebar() {
                     <item.icon className="w-5 h-5" />
                     {!collapsed && <span>{item.label}</span>}
                   </div>
-                  {!collapsed && item.hasSubmenu && (
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${
-                        scheduleExpanded && item.id === "appointments" ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
                 </div>
               );
 
@@ -147,24 +150,6 @@ export default function ConsultantSidebar() {
                     >
                       {ItemContent}
                     </button>
-                  )}
-
-                  {/* Submenu */}
-                  {!collapsed && item.id === "appointments" && scheduleExpanded && (
-                    <div className="ml-8 mt-1 space-y-1">
-                      <Link
-                        href="/appointments/active"
-                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        Active Appointments
-                      </Link>
-                      <Link
-                        href="/appointments/archived"
-                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        Archived
-                      </Link>
-                    </div>
                   )}
                 </div>
               );

@@ -1,14 +1,17 @@
 // hooks/services/use-appointment-service.ts
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import {
   appointmentService,
   type AppointmentQueryParams,
   type AppointmentDetailResponse,
+  AppointmentUpdateRequest,
 } from "@/services/api/appointment-service";
 import { scheduleService } from "@/services/api/schedule-service";
+import { toast } from "sonner";
+import { m } from "framer-motion";
 
 /** Lấy userId từ nhiều claim phổ biến (kể cả .NET nameidentifier) */
 function extractUserIdFromClaims(user: unknown): string | undefined {
@@ -26,7 +29,8 @@ function extractUserIdFromClaims(user: unknown): string | undefined {
 
   if (directId) return String(directId);
 
-  const payload: Record<string, unknown> = (userObj.tokenPayload ?? userObj.decoded ?? userObj.profile) as Record<string, unknown> ?? {};
+  const payload: Record<string, unknown> =
+    ((userObj.tokenPayload ?? userObj.decoded ?? userObj.profile) as Record<string, unknown>) ?? {};
   if (!payload) return undefined;
 
   const nestedId =
@@ -42,7 +46,9 @@ function extractUserIdFromClaims(user: unknown): string | undefined {
 }
 
 function normalizeRole(role: unknown): "consultant" | "client" | "unknown" {
-  const r = String(role ?? "").trim().toLowerCase();
+  const r = String(role ?? "")
+    .trim()
+    .toLowerCase();
   if (r === "consultant") return "consultant";
   if (r === "client" || r === "customer" || r === "user") return "client";
   return "unknown";
@@ -54,112 +60,194 @@ function normalizeRole(role: unknown): "consultant" | "client" | "unknown" {
  * - Chỉ gọi API khi đã có id
  * - Trả về { appointments, message, isSuccess }
  */
-export const useMyAppointments = (
-  queryParams?: Omit<AppointmentQueryParams, "clientId" | "consultantId">
-) => {
-  const { user } = useAuthStore();
-
-  const roleNorm = normalizeRole((user as unknown as Record<string, unknown>)?.role);
-  const id = extractUserIdFromClaims(user);
-
-  const effectiveParams: AppointmentQueryParams = {
-    ...(queryParams || {}),
-    ...(roleNorm === "consultant" && id ? { consultantId: id } : {}),
-    ...(roleNorm !== "consultant" && id ? { clientId: id } : {}),
-  };
-
+export const useMyAppointments = (queryParams?: AppointmentQueryParams) => {
   return useQuery({
-    queryKey: ["appointments", roleNorm, id ?? "-", effectiveParams],
-    enabled: !!id, // ✅ chỉ chạy khi có id
+    queryKey: ["myAppointments", queryParams],
     queryFn: async () => {
-      try {
-        console.log("[useMyAppointments] Fetching appointments with params:", effectiveParams);
-        
-        // Thêm timeout cho request
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout after 8 seconds')), 8000);
-        });
-        
-        const requestPromise = appointmentService.getAppointments(effectiveParams);
-        
-        const res = await Promise.race([requestPromise, timeoutPromise]) as any;
-        console.log("[useMyAppointments] API response:", res);
+      const response = await appointmentService.getMyAppointments(queryParams);
+      return {
+        data: response.data,
+      };
+    },
+  });
+};
 
-        // Xử lý dữ liệu từ API response theo format mới
-        const appointments: AppointmentDetailResponse[] = Array.isArray(res.data) 
-          ? res.data 
-          : [];
+export const useGetAppointmentDetails = (id: string) => {
+  // Giả định bạn đang sử dụng TanStack Query (React Query)
+  const { data, ...query } = useQuery({
+    queryKey: ["appointmentDetails", id],
+    queryFn: () => appointmentService.getAppointmentDetails(id),
+    enabled: !!id && id !== "loading" && id !== "error", // Chỉ fetch khi ID hợp lệ
+  });
 
-        // Note: Schedule information is not being fetched separately 
-        // because the endpoint doesn't exist or returns 404
-        // The appointments should already include schedule info if the API provides it
-        
-        return {
-          appointments: appointments,
-          message: res.message ?? "",
-          isSuccess: res.isSuccess ?? true,
-          status: "success",
-          code: res.code,
-          errors: res.errors || [],
-          metaData: res.metaData,
-        };
-      } catch (error: unknown) {
-        console.error("[useMyAppointments] Error fetching appointments:", error);
-        
-        // Trả về mock data khi API lỗi
-        const mockAppointments: AppointmentDetailResponse[] = [
-          {
-            id: "mock-1",
-            clientId: "client-001",
-            consultantId: id || "consultant-001",
-            scheduleId: "schedule-001",
-            status: "confirmed",
-            notes: "Tư vấn về sức khỏe tâm lý",
-            paymentStatus: "paid",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            schedule: {
-              id: "schedule-001",
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-              isAvailable: false
-            }
-          },
-          {
-            id: "mock-2", 
-            clientId: "client-002",
-            consultantId: id || "consultant-001",
-            scheduleId: "schedule-002",
-            status: "pending",
-            notes: "Hỗ trợ stress công việc",
-            paymentStatus: "pending",
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            schedule: {
-              id: "schedule-002",
-              startTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              endTime: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
-              isAvailable: false
-            }
-          }
-        ];
-        
-        const errorMessage = error instanceof Error ? error.message : "API timeout";
-        
-        return {
-          appointments: mockAppointments,
-          message: "API timeout - showing mock data",
-          isSuccess: false,
-          status: "error",
-          code: 500,
-          errors: [errorMessage],
-          metaData: null,
-        };
+  return { data: data?.data, ...query };
+};
+
+// Update Appointment Hook
+export const useUpdateAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: AppointmentUpdateRequest }) =>
+      appointmentService.updateAppointment(id, request),
+    onSuccess: (data, variables) => {
+      if (data.isSuccess) {
+        toast.success(data.message || "Cập nhật cuộc hẹn thành công");
+
+        // Invalidate relevant queries
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", variables.id] });
+        queryClient.invalidateQueries({ queryKey: ["myAppointments"] });
+        queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      } else {
+        toast.error(data.message || "Cập nhật cuộc hẹn thất bại");
       }
     },
-    select: (d) => d,
-    staleTime: 5 * 60 * 1000, // Cache 5 phút
-    retry: 2, // Retry 2 lần
-    retryDelay: 1000, // Delay 1 giây giữa các lần retry
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi cập nhật cuộc hẹn");
+    },
+  });
+};
+
+// Convenience hooks for specific actions
+export const useConfirmAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => appointmentService.confirmAppointment(id),
+    onSuccess: (data, id) => {
+      if (data.isSuccess) {
+        toast.success("Đã xác nhận cuộc hẹn thành công");
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", id] });
+        queryClient.invalidateQueries({ queryKey: ["myAppointments"] });
+      } else {
+        toast.error(data.message || "Xác nhận cuộc hẹn thất bại");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi xác nhận cuộc hẹn");
+    },
+  });
+};
+
+export const useCompleteAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => appointmentService.completeAppointment(id),
+    onSuccess: (data, id) => {
+      if (data.isSuccess) {
+        toast.success("Đã hoàn thành cuộc hẹn");
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", id] });
+        queryClient.invalidateQueries({ queryKey: ["myAppointments"] });
+      } else {
+        toast.error(data.message || "Hoàn thành cuộc hẹn thất bại");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi hoàn thành cuộc hẹn");
+    },
+  });
+};
+
+export const useCancelAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      appointmentService.cancelAppointment(id, reason),
+    onSuccess: (data, variables) => {
+      if (data.isSuccess) {
+        toast.success("Đã hủy cuộc hẹn thành công");
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", variables.id] });
+        queryClient.invalidateQueries({ queryKey: ["myAppointments"] });
+      } else {
+        toast.error(data.message || "Hủy cuộc hẹn thất bại");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi hủy cuộc hẹn");
+    },
+  });
+};
+
+export const useRescheduleAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, newScheduleId }: { id: string; newScheduleId: string }) =>
+      appointmentService.rescheduleAppointment(id, newScheduleId),
+    onSuccess: (data, variables) => {
+      if (data.isSuccess) {
+        toast.success("Đã đổi lịch hẹn thành công");
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", variables.id] });
+        queryClient.invalidateQueries({ queryKey: ["myAppointments"] });
+      } else {
+        toast.error(data.message || "Đổi lịch hẹn thất bại");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi đổi lịch hẹn");
+    },
+  });
+};
+
+export const useAddNotes = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      appointmentService.addNotes(id, notes),
+    onSuccess: (data, variables) => {
+      if (data.isSuccess) {
+        toast.success("Đã thêm ghi chú thành công");
+        queryClient.invalidateQueries({ queryKey: ["appointmentDetails", variables.id] });
+      } else {
+        toast.error(data.message || "Thêm ghi chú thất bại");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Có lỗi xảy ra khi thêm ghi chú");
+    },
+  });
+};
+
+// Hook to check if user can perform specific actions
+export const useAppointmentActions = (appointment: AppointmentDetailResponse | undefined) => {
+  const canConfirm = appointment?.status === "Pending";
+  const canComplete =
+    appointment?.status === "PendingPayment" || appointment?.status === "Confirmed";
+  const canCancel =
+    (appointment?.status === "Pending" || appointment?.status === "PendingPayment") &&
+    !appointment?.reasonForCancellation;
+  const canReschedule =
+    appointment?.status === "PendingPayment" &&
+    appointment?.schedule?.startTime &&
+    new Date(appointment.schedule.startTime).getTime() - Date.now() > 8 * 60 * 60 * 1000;
+  const canAddNotes = true; // Always allowed
+
+  return {
+    canConfirm,
+    canComplete,
+    canCancel,
+    canReschedule,
+    canAddNotes,
+    isPending: appointment?.status === "Pending",
+    isPendingPayment: appointment?.status === "PendingPayment",
+    isConfirmed: appointment?.status === "Confirmed",
+    isCompleted: appointment?.status === "Completed",
+    isCancelled: appointment?.status === "Cancelled",
+  };
+};
+
+export const useCancelAppointmentsAfterPayment = () => {
+  return useMutation({
+    mutationFn: (orderCode: number) =>
+      appointmentService.cancelledAfterPaymentAppointments(orderCode),
+  });
+};
+
+export const usePayingAppointment = () => {
+  return useMutation({
+    mutationFn: (orderCode: number) => appointmentService.payingAppointments(orderCode),
   });
 };

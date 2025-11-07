@@ -18,8 +18,6 @@ export interface CreateScheduleRequest {
 // Get consultant schedules request
 export interface GetConsultantSchedulesRequest {
   consultantId: string;
-  pageNumber?: number;
-  pageSize?: number;
 }
 
 export const scheduleService = {
@@ -36,14 +34,10 @@ export const scheduleService = {
   getConsultantSchedules: async (
     params: GetConsultantSchedulesRequest
   ): Promise<ApiResponse<ScheduleSlot[]>> => {
-    const { consultantId, pageNumber = 1, pageSize = 10 } = params;
+    const { consultantId } = params;
 
     const response = await apiService.get<ApiResponse<ScheduleSlot[]>>(
-      `/api/schedules/consultant/${consultantId}`,
-      {
-        PageNumber: pageNumber,
-        PageSize: pageSize,
-      }
+      `/api/schedules/consultant/${consultantId}`
     );
     return response.data;
   },

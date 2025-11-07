@@ -1,5 +1,5 @@
 //login hook
-import { useState } from "react";
+import { use, useState } from "react";
 import { useAuthStore } from "@/store/zustand/auth-store";
 import { AuthService, LoginCredentials, RegisterCredentials } from "@/services/api/auth-service";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,14 @@ export function useAuth() {
       if (response.isSuccess) {
         setToken(response.data.accessToken); //call setToken to store auth-token in cookie and apiService ( zustand store)
         toast.success("Login successful!");
-        router.push("/"); // Redirect to home or dashboard
+        const { user } = useAuthStore.getState();
+        console.log(user);
+        setUser(user); //set user info in zustand store
+        if (user?.role === "Consultant") {
+          router.push("/consultant/dashboard"); // Redirect to consultant dashboard
+        } else {
+          router.push("/"); // Redirect to home or dashboard
+        }
       } else {
         setError(response.message || "Login failed");
         toast.error(response.message || "Login failed");

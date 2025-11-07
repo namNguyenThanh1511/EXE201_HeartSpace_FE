@@ -47,12 +47,12 @@ const parseJwtToken = (token: string): User | null => {
 
     // Map JWT payload sang User interface
     const user: User = {
-      id: payload.sub || payload.id || payload.userId,
-      email: payload.email,
-      name: payload.name || payload.username,
+      // FIX: Prioritize 'nameid' (standard .NET Identity Claim for User ID)
+      id: payload.nameid || payload.sub || payload.id || payload.userId,
+      email: payload.email, // FIX: Prioritize 'fullName' or 'unique_name' for the user name
+      name: payload.fullName || payload.name || payload.username || payload.unique_name,
       role: payload.role || payload.roles?.[0] || "client",
-      avatar: payload.avatar || payload.picture,
-      // Thêm các trường khác tùy theo cấu trúc JWT của bạn
+      avatar: payload.avatar || payload.picture, // Thêm các trường khác tùy theo cấu trúc JWT của bạn
       ...payload,
     };
 

@@ -1,14 +1,13 @@
-import { 
-  AppointmentBookingRequest, 
-  AppointmentQueryParams, 
-  bookingService 
+import {
+  AppointmentBookingRequest,
+  AppointmentQueryParams,
+  bookingService,
 } from "@/services/api/booking-service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const useBookAppointment = () => {
   const queryClient = useQueryClient();
-  console.log("hshs");
   return useMutation({
     mutationFn: (request: AppointmentBookingRequest) => bookingService.bookAppointment(request),
     onSuccess: (data) => {
@@ -49,10 +48,10 @@ export const useConsultantAppointments = (queryParams?: AppointmentQueryParams) 
  */
 export const useUpdateAppointment = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     // mutationFn expects an object: { id, payload }
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) => 
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
       bookingService.updateAppointmentStatus(id, payload),
     onSuccess: (data) => {
       if (data.isSuccess) {

@@ -214,8 +214,7 @@ export const useAddNotes = () => {
 // Hook to check if user can perform specific actions
 export const useAppointmentActions = (appointment: AppointmentDetailResponse | undefined) => {
   const canConfirm = appointment?.status === "Pending";
-  const canComplete =
-    appointment?.status === "PendingPayment" || appointment?.status === "Confirmed";
+  const canComplete = appointment?.status === "Paid";
   const canCancel =
     (appointment?.status === "Pending" || appointment?.status === "PendingPayment") &&
     !appointment?.reasonForCancellation;

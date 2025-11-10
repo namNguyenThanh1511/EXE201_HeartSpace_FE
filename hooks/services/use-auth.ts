@@ -25,7 +25,7 @@ export function useAuth() {
         if (user?.role === "Consultant") {
           router.push("/consultant/dashboard/appointments"); // Redirect to consultant dashboard
         } else if (user?.role === "Admin") {
-          router.push("/admin/dashboard"); // Redirect to admin dashboard
+          router.push("/admin/revenue"); // Redirect to admin dashboard
         } else {
           router.push("/"); // Redirect to home or dashboard
         }

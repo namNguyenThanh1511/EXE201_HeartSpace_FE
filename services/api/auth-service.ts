@@ -21,6 +21,7 @@ export interface RegisterCredentials {
   phoneNumber: string;
   userName: string;
   password: string;
+  bio?: string;
   //   dateOfBirth: string;
   //   identifier: string;
   confirmPassword: string;

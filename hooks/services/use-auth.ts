@@ -23,7 +23,7 @@ export function useAuth() {
         console.log(user);
         setUser(user); //set user info in zustand store
         if (user?.role === "Consultant") {
-          router.push("/consultant/dashboard"); // Redirect to consultant dashboard
+          router.push("/consultant/dashboard/appointments"); // Redirect to consultant dashboard
         } else if (user?.role === "Admin") {
           router.push("/admin/dashboard"); // Redirect to admin dashboard
         } else {

@@ -30,7 +30,7 @@ import {
 import { useAuthStore } from "@/store/zustand/auth-store";
 
 export default function AdminSidebar() {
-  const [activeMenu, setActiveMenu] = useState("home");
+  const [activeMenu, setActiveMenu] = useState("revenue");
   const [dashboardExpanded, setDashboardExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -41,6 +41,7 @@ export default function AdminSidebar() {
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, hasSubmenu: true },
     { id: "revenue", label: "Revenue", icon: Star, linkTo: "revenue" },
+    { id: "payment-requests", label: "Payment Requests", icon: Users, linkTo: "payment-requests" },
   ];
 
   const bottomMenuItems = [

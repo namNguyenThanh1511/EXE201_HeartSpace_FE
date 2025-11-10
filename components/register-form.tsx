@@ -20,6 +20,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"form
     userName: "",
     password: "",
     confirmPassword: "",
+    bio: "",
     gender: true,
   } as ApiRegisterCredentials);
 

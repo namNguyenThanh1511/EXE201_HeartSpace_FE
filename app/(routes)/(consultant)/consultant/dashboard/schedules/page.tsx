@@ -31,9 +31,6 @@ export default function SchedulePage() {
   });
   const schedules = schedulesResponse?.data || [];
 
-  // Sử dụng useConsultant để lấy thông tin consultant và freeSchedules
-  // Use userName or id as fallback
-
   // Hàm tính toán thời gian kết thúc dựa trên thời gian bắt đầu và duration
   const calculateEndTime = (start: string, duration: 30 | 60): Date => {
     const startDate = new Date(start);
@@ -84,24 +81,6 @@ export default function SchedulePage() {
     }
   };
 
-  // const handleToggleAvailability = async (id: string) => {
-  //   const schedule = schedules.find((s) => s.id === id);
-  //   if (!schedule) return;
-
-  //   setUpdating(id);
-  //   try {
-  //     await scheduleService.updateScheduleAvailability(id, !schedule.isAvailable);
-  //     toast.success("Cập nhật trạng thái lịch thành công!");
-  //     // Refresh consultant data để cập nhật freeSchedules
-  //     window.location.reload(); // Simple refresh để cập nhật data
-  //   } catch (error) {
-  //     console.error("Failed to update schedule availability:", error);
-  //     toast.error("Không thể cập nhật trạng thái lịch. Vui lòng thử lại.");
-  //   } finally {
-  //     setUpdating(null);
-  //   }
-  // };
-
   const formatSchedule = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -115,27 +94,35 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-200/30 via-transparent to-transparent" />
+
+      <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Lịch hẹn của tôi</h1>
-          <p className="text-purple-200">Quản lý các khung thời gian có sẵn để tư vấn</p>
+          <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 border border-white/30 inline-block">
+            <h1 className="text-3xl font-bold mb-2 text-slate-800">Lịch hẹn của tôi</h1>
+            <p className="text-slate-600">Quản lý các khung thời gian có sẵn để tư vấn</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Add New Schedule Form */}
           <div>
-            <Card className="bg-gradient-to-r from-purple-800/40 to-blue-800/40 border-purple-600/30 backdrop-blur-sm shadow-2xl">
+            <Card className="bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-xl">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="h-5 w-5 text-purple-300" />
+                <CardTitle className="text-slate-800 flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-2 border border-white/30">
+                    <Plus className="h-5 w-5 text-blue-600" />
+                  </div>
                   Thêm khung thời gian mới
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startTime" className="text-purple-200">
+                  <Label htmlFor="startTime" className="text-slate-700">
                     Thời gian bắt đầu
                   </Label>
                   <Input
@@ -143,18 +130,22 @@ export default function SchedulePage() {
                     type="datetime-local"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="bg-black/30 border-purple-600/30 text-white placeholder-purple-400 focus:border-purple-400"
+                    className="bg-white/30 backdrop-blur-sm border border-white/40 text-slate-800 placeholder-slate-500 focus:border-blue-400 focus:bg-white/40 transition-all duration-200"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-purple-200">Thời lượng</Label>
+                  <Label className="text-slate-700">Thời lượng</Label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       variant={selectedDuration === 30 ? "default" : "outline"}
                       onClick={() => setSelectedDuration(30)}
-                      className="flex-1"
+                      className={`flex-1 transition-all duration-200 ${
+                        selectedDuration === 30
+                          ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border border-white/20"
+                          : "bg-white/30 backdrop-blur-sm border border-white/40 text-slate-700 hover:bg-white/40"
+                      }`}
                     >
                       30 phút
                     </Button>
@@ -162,7 +153,11 @@ export default function SchedulePage() {
                       type="button"
                       variant={selectedDuration === 60 ? "default" : "outline"}
                       onClick={() => setSelectedDuration(60)}
-                      className="flex-1"
+                      className={`flex-1 transition-all duration-200 ${
+                        selectedDuration === 60
+                          ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border border-white/20"
+                          : "bg-white/30 backdrop-blur-sm border border-white/40 text-slate-700 hover:bg-white/40"
+                      }`}
                     >
                       60 phút
                     </Button>
@@ -170,8 +165,8 @@ export default function SchedulePage() {
                 </div>
 
                 {startTime && selectedDuration && (
-                  <div className="p-3 bg-black/30 rounded-md border border-purple-600/20">
-                    <p className="text-sm text-purple-200">
+                  <div className="p-3 bg-white/30 backdrop-blur-sm rounded-xl border border-white/40">
+                    <p className="text-sm text-slate-700">
                       <strong>Thời gian bắt đầu:</strong>{" "}
                       {new Date(startTime).toLocaleString("vi-VN", {
                         year: "numeric",
@@ -181,7 +176,7 @@ export default function SchedulePage() {
                         minute: "2-digit",
                       })}
                     </p>
-                    <p className="text-sm text-purple-200">
+                    <p className="text-sm text-slate-700">
                       <strong>Thời gian kết thúc:</strong>{" "}
                       {calculateEndTime(startTime, selectedDuration).toLocaleString("vi-VN", {
                         year: "numeric",
@@ -197,7 +192,7 @@ export default function SchedulePage() {
                 <div className="flex gap-2">
                   <Button
                     onClick={handleAddSchedule}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg border border-purple-400/50"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg border border-white/20 backdrop-blur-sm rounded-xl flex-1 transition-all duration-200"
                     disabled={!startTime || !selectedDuration || creating}
                   >
                     {creating ? (
@@ -209,12 +204,12 @@ export default function SchedulePage() {
                   </Button>
 
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => {
                       setStartTime("");
                       setSelectedDuration(null);
                     }}
-                    className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+                    className="text-slate-600 hover:text-slate-800 hover:bg-white/40 border border-white/40 backdrop-blur-sm rounded-xl transition-all duration-200"
                   >
                     Hủy
                   </Button>
@@ -224,45 +219,73 @@ export default function SchedulePage() {
           </div>
 
           {/* Existing Schedules */}
-          <div>
-            <Card className="bg-gradient-to-r from-purple-800/40 to-blue-800/ turbo-blur-sm shadow-2xl">
+          <div className="lg:col-span-2">
+            <Card className="bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-xl">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-purple-300" />
+                <CardTitle className="text-slate-800 flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-2 border border-white/30">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                  </div>
                   Khung thời gian của bạn ({schedules?.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {schedulesResponse === undefined ? (
                   <div className="text-center py-8">
-                    <Loader2 className="h-12 w-12 text-purple-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-purple-200">Đang tải lịch hẹn...</p>
+                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30">
+                      <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                    </div>
+                    <p className="text-slate-600">Đang tải lịch hẹn...</p>
                   </div>
                 ) : schedules.length === 0 ? (
                   <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                    <p className="text-purple-200">Chưa tạo khung thời gian nào</p>
-                    <p className="text-purple-300 text-sm">
+                    <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/30">
+                      <Calendar className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <p className="text-slate-600">Chưa tạo khung thời gian nào</p>
+                    <p className="text-slate-500 text-sm">
                       Thêm khung thời gian đầu tiên để bắt đầu
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                     {schedules.map((schedule) => (
                       <div
                         key={schedule.id}
-                        className="w-full p-4 rounded-lg border-2 transition-all duration-200 bg-slate-800/30 border-slate-600 hover:border-slate-500 hover:bg-slate-700/30"
+                        className={`w-full p-4 rounded-xl border-2 transition-all duration-200 backdrop-blur-sm ${
+                          schedule.isAvailable
+                            ? "bg-white/30 border-white/40 hover:border-blue-300 hover:bg-white/40"
+                            : "bg-slate-100/30 border-slate-200/40 hover:border-slate-300"
+                        }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-full bg-slate-600">
-                              <Clock className="w-4 h-4" />
+                            <div
+                              className={`p-2 rounded-full backdrop-blur-sm ${
+                                schedule.isAvailable
+                                  ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-white/40"
+                                  : "bg-slate-200/50 border border-slate-300/40"
+                              }`}
+                            >
+                              <Clock
+                                className={`w-4 h-4 ${
+                                  schedule.isAvailable ? "text-blue-600" : "text-slate-500"
+                                }`}
+                              />
                             </div>
                             <div>
-                              <div className="font-medium text-white">
+                              <div
+                                className={`font-medium ${
+                                  schedule.isAvailable ? "text-slate-800" : "text-slate-600"
+                                }`}
+                              >
                                 {formatSchedule(schedule.startTime, schedule.endTime)}
                               </div>
-                              <div className="text-sm text-slate-400">
+                              <div
+                                className={`text-sm ${
+                                  schedule.isAvailable ? "text-slate-600" : "text-slate-500"
+                                }`}
+                              >
                                 Thời lượng:{" "}
                                 {Math.round(
                                   (new Date(schedule.endTime).getTime() -
@@ -272,10 +295,10 @@ export default function SchedulePage() {
                                 phút
                               </div>
                               <Badge
-                                className={`mt-1 ${
+                                className={`mt-1 border border-white/20 backdrop-blur-sm ${
                                   schedule.isAvailable
                                     ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
-                                    : "bg-gradient-to-r from-red-500 to-pink-500 text-white"
+                                    : "bg-gradient-to-r from-slate-500 to-slate-600 text-white"
                                 }`}
                               >
                                 {schedule.isAvailable ? "Có sẵn" : "Đã đặt hoặc quá hạn"}
@@ -283,31 +306,13 @@ export default function SchedulePage() {
                             </div>
                           </div>
 
-                          {/* <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => handleToggleAvailability(schedule.id)}
-                              disabled={updating === schedule.id}
-                              className={`${
-                                schedule.isAvailable
-                                  ? "text-orange-400 hover:text-orange-300 hover:bg-orange-500/20"
-                                  : "text-green-400 hover:text-green-300 hover:bg-green-500/20"
-                              }`}
-                            >
-                              {updating === schedule.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Edit className="h-4 w-4" />
-                              )}
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                              variant="outline"
                               onClick={() => handleDeleteSchedule(schedule.id)}
                               disabled={deleting === schedule.id}
-                              className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-500/20 border border-red-200/40 backdrop-blur-sm rounded-lg transition-all duration-200"
                             >
                               {deleting === schedule.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -315,7 +320,7 @@ export default function SchedulePage() {
                                 <Trash2 className="h-4 w-4" />
                               )}
                             </Button>
-                          </div> */}
+                          </div>
                         </div>
                       </div>
                     ))}

@@ -1,21 +1,21 @@
 "use client";
 
 import { useState } from "react";
-
 import { subDays } from "date-fns";
 import { useDailyRevenueStatistics } from "@/hooks/services/use-daily-revenue-service";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import RevenueSummary from "./components/revenue-summary";
 import RevenueChart from "./components/revenue-chart";
+import type { DateRange } from "react-day-picker";
 
 export default function RevenueStatisticsPage() {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
 
-  const startDate = dateRange.from.toISOString().split("T")[0];
-  const endDate = dateRange.to.toISOString().split("T")[0];
+  const startDate = dateRange?.from?.toISOString().split("T")[0] ?? "";
+  const endDate = dateRange?.to?.toISOString().split("T")[0] ?? "";
 
   const { data, loading, error } = useDailyRevenueStatistics(startDate, endDate);
 

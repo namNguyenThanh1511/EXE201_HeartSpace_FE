@@ -38,10 +38,9 @@ export default function AdminSidebar() {
 
   // 👉 Thêm field linkTo cho từng item
   const menuItems = [
-    { id: "search", label: "Search", icon: Search, linkTo: "/search" },
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, hasSubmenu: true },
-
+    { id: "revenue", label: "Revenue", icon: Star, linkTo: "revenue" },
   ];
 
   const bottomMenuItems = [
@@ -154,19 +153,19 @@ export default function AdminSidebar() {
                   {!collapsed && item.id === "dashboard" && dashboardExpanded && (
                     <div className="ml-8 mt-1 space-y-1">
                       <Link
-                        href="/dashboard/overview"
+                        href="overview"
                         className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         Overview
                       </Link>
                       <Link
-                        href="/dashboard/analytics"
+                        href="/dashboard/admin/analytics"
                         className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         Analytics
                       </Link>
                       <Link
-                        href="/dashboard/reports"
+                        href="/dashboard/admin/reports"
                         className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         Reports

@@ -24,6 +24,8 @@ export function useAuth() {
         setUser(user); //set user info in zustand store
         if (user?.role === "Consultant") {
           router.push("/consultant/dashboard"); // Redirect to consultant dashboard
+        } else if (user?.role === "Admin") {
+          router.push("/admin/dashboard"); // Redirect to admin dashboard
         } else {
           router.push("/"); // Redirect to home or dashboard
         }

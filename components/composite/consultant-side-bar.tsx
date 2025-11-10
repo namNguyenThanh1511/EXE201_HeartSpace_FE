@@ -29,7 +29,7 @@ import {
 import { useAuthStore } from "@/store/zustand/auth-store";
 
 export default function ConsultantSidebar() {
-  const [activeMenu, setActiveMenu] = useState("home");
+  const [activeMenu, setActiveMenu] = useState("appointments");
   const [scheduleExpanded, setScheduleExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

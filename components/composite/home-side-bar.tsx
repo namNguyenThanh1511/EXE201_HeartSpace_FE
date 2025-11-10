@@ -245,7 +245,17 @@ export default function Sidebar() {
               </DropdownMenuItem>
               {user?.role.toLowerCase() === "consultant" && (
                 <DropdownMenuItem asChild>
-                  <Link href="/consultant/dashboard" className="cursor-pointer flex items-center">
+                  <Link
+                    href="/consultant/dashboard/appointments"
+                    className="cursor-pointer flex items-center"
+                  >
+                    <Settings className="w-4 h-4 mr-2" /> Dashboard
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {user?.role.toLowerCase() === "admin" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/dashboard" className="cursor-pointer flex items-center">
                     <Settings className="w-4 h-4 mr-2" /> Dashboard
                   </Link>
                 </DropdownMenuItem>

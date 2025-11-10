@@ -39,13 +39,12 @@ export default function AdminSidebar() {
   // 👉 Thêm field linkTo cho từng item
   const menuItems = [
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, hasSubmenu: true },
+
     { id: "revenue", label: "Revenue", icon: Star, linkTo: "revenue" },
     { id: "payment-requests", label: "Payment Requests", icon: Users, linkTo: "payment-requests" },
   ];
 
   const bottomMenuItems = [
-    { id: "manage-account", label: "Manage Account", icon: UserCog, linkTo: "/manage-account" },
     { id: "settings", label: "Settings", icon: Settings, linkTo: "/settings" },
     { id: "help", label: "Help", icon: HelpCircle, linkTo: "/help" },
   ];
@@ -119,13 +118,6 @@ export default function AdminSidebar() {
                     <item.icon className="w-5 h-5" />
                     {!collapsed && <span>{item.label}</span>}
                   </div>
-                  {!collapsed && item.hasSubmenu && (
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform ${
-                        dashboardExpanded && item.id === "dashboard" ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
                 </div>
               );
 

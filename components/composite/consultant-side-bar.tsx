@@ -44,13 +44,6 @@ export default function ConsultantSidebar() {
       icon: Calendar,
       linkTo: "/consultant/dashboard/appointments",
     },
-    { id: "bookings", label: "Bookings", icon: Calendar, linkTo: "/consultant/dashboard/bookings" },
-    {
-      id: "requests",
-      label: "Requests",
-      icon: MessageSquare,
-      linkTo: "/consultant/dashboard/requests",
-    },
     { id: "schedules", label: "Schedules", icon: Users, linkTo: "/consultant/dashboard/schedules" },
   ];
 

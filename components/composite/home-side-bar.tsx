@@ -41,9 +41,9 @@ export default function Sidebar() {
     // { id: "search", label: "Search", icon: Search, linkTo: "/search" },
     { id: "home", label: "Home", icon: Home, linkTo: "/" },
     // { id: "projects", label: "Projects", icon: FolderKanban, hasSubmenu: true },
-    { id: "messages", label: "Messages", icon: MessageSquare, linkTo: "/messages" },
+
     { id: "consultants", label: "Consultants", icon: Users, linkTo: "/consultants" },
-    { id: "favorites", label: "Favorites", icon: Star, linkTo: "/favorites" },
+
     { id: "appointments", label: "Appointments", icon: Calendar, linkTo: "/appointments" },
   ];
 
@@ -151,24 +151,6 @@ export default function Sidebar() {
                       {ItemContent}
                     </button>
                   )}
-
-                  {/* Submenu */}
-                  {!collapsed && item.id === "projects" && projectsExpanded && (
-                    <div className="ml-8 mt-1 space-y-1">
-                      <Link
-                        href="/projects/active"
-                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        Active Projects
-                      </Link>
-                      <Link
-                        href="/projects/archived"
-                        className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        Archived
-                      </Link>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -255,7 +237,7 @@ export default function Sidebar() {
               )}
               {user?.role.toLowerCase() === "admin" && (
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard" className="cursor-pointer flex items-center">
+                  <Link href="/admin/revenue" className="cursor-pointer flex items-center">
                     <Settings className="w-4 h-4 mr-2" /> Dashboard
                   </Link>
                 </DropdownMenuItem>

@@ -28,6 +28,10 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"form
 
   const validateField = (name: string, value: string) => {
     let message = "";
+    console.log(name);
+    if (name == "userName") {
+      if (/\s/.test(value)) message = "username cannot contain spaces";
+    }
 
     if (name === "phoneNumber") {
       if (/\s/.test(value)) message = "Phone number cannot contain spaces";
@@ -152,6 +156,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"form
             onChange={handleInputChange}
             required
           />
+          {errors.userName && <p className="text-sm text-red-500">{errors.userName}</p>}
         </div>
 
         <div className="grid gap-3">

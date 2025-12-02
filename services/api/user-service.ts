@@ -9,13 +9,14 @@ export interface User {
   phoneNumber: string;
   userName: string;
   dateOfBirth: string;
-  identifier: string;
-  avatar: string;
+  identifier: string | null;
+  avatar: string | null;
+  avatarUrl?: string;
   userRole: string;
   isActive: boolean;
   role: string;
   gender: boolean;
-  consultantInfo: ConsultantProfile;
+  consultantInfo: ConsultantProfile | null;
 }
 export interface ConsultantProfile {
   specialization: string;
@@ -130,6 +131,16 @@ export const userService = {
     const response = await apiService.delete<string>("/api/users/delete-account", {
       confirmationText,
     });
+    return response.data;
+  },
+
+  // Get all users
+  getAllUsers: async (pageNumber?: number, pageSize?: number): Promise<ApiResponse<User[]>> => {
+    const params: { pageNumber?: number; pageSize?: number } = {};
+    if (pageNumber !== undefined) params.pageNumber = pageNumber;
+    if (pageSize !== undefined) params.pageSize = pageSize;
+
+    const response = await apiService.get<ApiResponse<User[]>>("/api/users", params);
     return response.data;
   },
 };

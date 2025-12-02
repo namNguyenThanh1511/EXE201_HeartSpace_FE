@@ -83,7 +83,7 @@ export const schema = z.object({
   userName: z.string(),
   dateOfBirth: z.string(),       // ISO string hoặc formatted date
   identifier: z.string(),        // dùng làm khóa duy nhất (thay cho id)
-  avatar: z.string().url().or(z.string().min(1)), // cho phép URL hoặc path
+  avatar: z.string(),            // cho phép URL, path hoặc empty string
   status: z.enum(["Active", "Inactive", "Pending"]),
   about: z.string(),
   role: z.string(),              // vẫn giữ vì interface của bạn có cả role & userRole

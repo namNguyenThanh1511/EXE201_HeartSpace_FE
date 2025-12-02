@@ -196,8 +196,8 @@ export default function Sidebar() {
                 <Avatar className="w-10 h-10 border-2 border-gray-200">
                   <AvatarImage src={displayUser.avatar || ""} alt={displayUser.fullName} />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
-                    {displayUser.fullName
-                      .split(" ")
+                    {displayUser?.fullName
+                      ?.split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </AvatarFallback>

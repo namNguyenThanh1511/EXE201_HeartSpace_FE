@@ -45,8 +45,10 @@ export function useUpdateProfile() {
       }
       toast.success(data.message || "Cập nhật thông tin thành công");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Có lỗi xảy ra khi cập nhật thông tin");
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật thông tin";
+      toast.error(message);
     },
   });
 }
@@ -68,8 +70,21 @@ export function useExportUserData() {
         toast.error(data.message || "Có lỗi xảy ra khi xuất dữ liệu");
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Có lỗi xảy ra khi xuất dữ liệu");
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Có lỗi xảy ra khi xuất dữ liệu";
+      toast.error(message);
     },
+  });
+}
+
+export function useGetAllUsers(pageNumber?: number, pageSize?: number) {
+  return useQuery({
+    queryKey: ["users", "all", pageNumber, pageSize],
+    queryFn: () => userService.getAllUsers(pageNumber, pageSize),
+    select: (data: ApiResponse<User[]>) => ({
+      users: data.data,
+      message: data.message,
+      metaData: data.metaData,
+    }),
   });
 }
